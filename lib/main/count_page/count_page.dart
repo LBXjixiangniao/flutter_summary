@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_summary/main/counter/bloc/counter_bloc.dart';
 import 'package:flutter_summary/util/bind_state_callback.dart';
+import 'package:flutter_summary/widgets/toast.dart';
 
 class CountPage extends StatefulWidget {
   final int count;
@@ -31,7 +32,15 @@ class _CountPageState extends State<CountPage> {
             onTap: () {
               BlocProvider.of<CounterBloc>(context).add(
                 CounterSaveEvent(
-                  bindCallback: BoolBindStateCallback(state: this, callback: (result) {}),
+                  bindCallback: BoolBindStateCallback(
+                      state: this,
+                      callback: (result) {
+                        if (result) {
+                          CustomToast.showShort('保存成功');
+                          BlocProvider.of<CounterBloc>(context).addState(CounterChangeState());
+                          Navigator.pop(context);
+                        }
+                      }),
                 ),
               );
             },

@@ -5,7 +5,7 @@ import 'package:flutter_summary/router/router.dart';
 import 'package:flutter_summary/util/bind_state_callback.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-import '../count_page.dart';
+import '../count_page/count_page.dart';
 
 class Counter extends StatefulWidget {
   @override

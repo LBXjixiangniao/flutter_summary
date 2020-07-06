@@ -1,4 +1,5 @@
 import 'package:bloc/bloc.dart';
+import 'package:flutter/material.dart';
 
 mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
   void addState(T nextState) {
