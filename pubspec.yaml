@@ -33,6 +33,8 @@ dependencies:
   pull_to_refresh: ^1.6.0
   # fluttertoast: ^5.0.1
   oktoast: ^2.3.2
+  dio: ^3.0.9
+  crypto: ^2.1.4
 
 dev_dependencies:
   flutter_test:

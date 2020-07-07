@@ -11,7 +11,7 @@ import '../../../dart_class/mixn/bloc_mixin.dart';
 part 'counter_event.dart';
 part 'counter_state.dart';
 
-class CounterBloc extends BlocCloseNotificationsMixin<CounterEvent, CounterState>
+class CounterBloc extends BlocCloseNotificationsAbstract<CounterEvent, CounterState>
     with BlocAddStateMixin{
   CounterBloc() : super(CounterInitial());
 
@@ -29,7 +29,7 @@ class CounterBloc extends BlocCloseNotificationsMixin<CounterEvent, CounterState
 
   void getCounterValue(GetCounterValueEvent event) {
     Future.delayed(Duration(seconds: 2), () {
-      event?.bindCallback?.callback?.call(true);
+      event?.bindCallback?.call(true);
       addState(CounterValueState(_count));
     });
   }
@@ -37,7 +37,7 @@ class CounterBloc extends BlocCloseNotificationsMixin<CounterEvent, CounterState
   void save(CounterSaveEvent event) {
     Future.delayed(Duration(seconds: 2), () {
       _count = event.value;
-      event?.bindCallback?.callback?.call(true);
+      event?.bindCallback?.call(true);
     });
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/dart_class/mixn/dispose_listenable.dart';
 
-abstract class StateDisposeNotificationsMixin<T extends StatefulWidget> extends State<T> with DisposeListenable {
+abstract class StateDisposeNotificationsAbstract<T extends StatefulWidget> extends State<T> with DisposeListenable {
   @override
   void dispose() {
     notifyListeners();

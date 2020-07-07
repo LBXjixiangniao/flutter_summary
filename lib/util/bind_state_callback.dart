@@ -2,9 +2,17 @@ import 'package:flutter/material.dart';
 
 class BindStateCallback<T> {
   final State state;
-  final ValueChanged<T> callback;
+  final ValueChanged<T> _callback;
 
-  BindStateCallback({this.state, this.callback});
+  BindStateCallback({@required this.state, @required ValueChanged<T> callback})
+      : assert(state != null && callback != null),
+        _callback = callback;
+
+  void call(T value) {
+    if (state?.mounted == true && _callback != null) {
+      _callback(value);
+    }
+  }
 }
 
 class BoolBindStateCallback extends BindStateCallback<bool> {

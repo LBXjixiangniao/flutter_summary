@@ -21,7 +21,7 @@ mixin DisposeListenable {
     return _listeners.isNotEmpty;
   }
 
-  void addListener(VoidCallback listener) {
+  void addDisposeListener(VoidCallback listener) {
     assert(_debugAssertNotDisposed());
     _listeners.add(listener);
   }
