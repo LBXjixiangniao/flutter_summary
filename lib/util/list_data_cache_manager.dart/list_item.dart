@@ -1,6 +1,5 @@
+import 'package:flutter_summary/expanded/database/database.dart';
 import 'package:moor/moor.dart';
-import 'package:smart_life_app/database/database.dart';
-
 
 part 'list_item.g.dart';
 
@@ -14,10 +13,10 @@ class CacheDBItems extends Table {
 }
 
 @UseDao(tables: [CacheDBItems])
-class CacheDBItemsDao extends DatabaseAccessor<SFDatabase> with _$CacheDBItemsDaoMixin {
+class CacheDBItemsDao extends DatabaseAccessor<LbxDatabase> with _$CacheDBItemsDaoMixin {
   // this constructor is required so that the main database can create an instance
   // of this object.
-  CacheDBItemsDao(SFDatabase db) : super(db);
+  CacheDBItemsDao(LbxDatabase db) : super(db);
 
   Future<List<CacheDBItem>> selecteIndexRangeDataInOrder(
       {@required int startIndex, @required int endIndex, @required String type}) {
@@ -59,6 +58,6 @@ class CacheDBItemsDao extends DatabaseAccessor<SFDatabase> with _$CacheDBItemsDa
   }
 
   static clearTable() {
-    SFDatabase().cacheDBItemsDao.deleteAllForType();
+    LbxDatabase().cacheDBItemsDao.deleteAllForType();
   }
 }

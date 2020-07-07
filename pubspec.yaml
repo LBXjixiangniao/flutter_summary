@@ -35,10 +35,22 @@ dependencies:
   oktoast: ^2.3.2
   dio: ^3.0.9
   crypto: ^2.1.4
+  #moor数据库相关
+  moor: ^3.1.0
+  moor_ffi: ^0.5.0
+  path_provider: ^1.6.11
+  permission_handler:
+    path: ./local_packages/permission_handler-5.0.1+1/
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
+  build_runner: ^1.5.2
+  #flutter packages pub run build_runner build
+  #flutter packages pub run build_runner watch
+  #配合moor数据库使用
+  moor_generator: ^3.1.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

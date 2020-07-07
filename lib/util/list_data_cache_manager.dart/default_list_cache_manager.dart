@@ -1,7 +1,9 @@
 import 'dart:convert';
 
-import 'package:smart_life_app/database/database.dart';
-import 'package:smart_life_app/util/list_data_cache_manager.dart/list_data_cache_manager.dart';
+import 'package:flutter_summary/expanded/database/database.dart';
+
+import 'list_data_cache_manager.dart';
+
 
 class DefaultListCacheManager<T> extends ListDataCacheManager<T> {
   DefaultListCacheManager({
@@ -27,7 +29,7 @@ class DefaultListCacheManager<T> extends ListDataCacheManager<T> {
   final Map<String, dynamic> Function(T model) modelToJson;
 
   Future<List<T>> loadDbCacheData(int startIndex, int endIndex) {
-    return SFDatabase()
+    return LbxDatabase()
         .cacheDBItemsDao
         .selecteDataFromIndexInOrder(
           startIndex: startIndex,
@@ -57,7 +59,7 @@ class DefaultListCacheManager<T> extends ListDataCacheManager<T> {
           ),
         )
         .toList();
-    SFDatabase().cacheDBItemsDao.insertList(
+    LbxDatabase().cacheDBItemsDao.insertList(
           tmpList,
         );
     super.addAll(list);
@@ -65,7 +67,7 @@ class DefaultListCacheManager<T> extends ListDataCacheManager<T> {
 
   @override
   void clear() {
-    SFDatabase().cacheDBItemsDao.deleteAllForType();
+    LbxDatabase().cacheDBItemsDao.deleteAllForType();
     super.clear();
   }
 }
