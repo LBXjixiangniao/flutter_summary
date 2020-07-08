@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_summary/main/demo_list.dart';
 
 typedef PageWrapBuilder = Widget Function(Widget child, BuildContext context);
 typedef RouteBuilder = Route<dynamic> Function(WidgetBuilder pageBuilder, RouteSettings setting);
@@ -7,6 +8,9 @@ class Router {
   Router._();
   static Router _routes = Router._();
   List<String> _routesName = [];
+
+  static String root = "/";
+  static get rootPageBuilder => (_) => DemoList();
 
   static String _routeNameForPage(Type page) => page.toString();
 

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_summary/router/router.dart';
 import 'package:oktoast/oktoast.dart';
 
-import 'main/counter/counter.dart';
-
 void main() {
   runApp(MyApp());
 }
@@ -32,7 +30,7 @@ class MyApp extends StatelessWidget {
           // closer together (more dense) than on mobile platforms.
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: Counter(),
+        routes: {Router.root: Router.rootPageBuilder},
       ),
     );
   }

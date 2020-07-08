@@ -22,12 +22,16 @@ class StepTask extends LinkedListEntry<StepTask> {
   }
 }
 
-///用于管理按顺序执行的多个任务，如mqtt的初始化、连接、订阅
+/*
+ * 用于管理按顺序执行的一个逻辑的多个步骤，如mqtt的初始化、连接、订阅
+ * 一个步骤执行结束后可以控制重复执行该步骤或者执行下一个步骤
+ * 可以将执行步骤跳到前面的步骤，但是不能跳到后面
+ */
+
 class OrderedTaskManager {
   LinkedList<StepTask> _stepList = LinkedList<StepTask>();
 
   ///延时执行Timer
-  Timer _delayRunNextStepTimer;
   bool _isStarted = false;
   bool _isRunning = false;
   String _nextStepID;
@@ -98,8 +102,6 @@ class OrderedTaskManager {
     if (!_isStarted || _isRunning || _nextStepID == null || _stepList?.isNotEmpty != true) {
       return;
     }
-
-    _delayRunNextStepTimer?.cancel();
 
     _isRunning = true;
     StepTask stepToRun;

@@ -20,7 +20,7 @@ LazyDatabase _openConnection() {
       print(dbFolder.path);
       return true;
     }());
-    final file = File(path.join(dbFolder.path, 'sunfly_db.sqlite'));
+    final file = File(path.join(dbFolder.path, 'lbx_db.sqlite'));
     return VmDatabase(file);
   });
 }

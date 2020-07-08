@@ -3,9 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_summary/main/counter/bloc/counter_bloc.dart';
 import 'package:flutter_summary/router/router.dart';
 import 'package:flutter_summary/util/bind_state_callback.dart';
+import 'package:flutter_summary/util/global_method.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
-import '../count_page/count_page.dart';
+import 'count_page/count_page.dart';
 
 class Counter extends StatefulWidget {
   @override
@@ -15,7 +16,6 @@ class Counter extends StatefulWidget {
 class _CounterState extends State<Counter> {
   RefreshController _refreshController = RefreshController(initialRefresh: true);
   CounterBloc bloc = CounterBloc();
-  int _count;
 
   @override
   void initState() {
@@ -57,7 +57,16 @@ class _CounterState extends State<Counter> {
           InkWell(
             child: Center(child: Text('count')),
             onTap: () {
-              Navigator.push(context, Router.routeForPage(page: CountPage()));
+              Navigator.push(
+                context,
+                Router.routeForPage(
+                  page: CountPage(),
+                  pageWrapBuilder: (child, context) => BlocProvider.value(
+                    value: bloc,
+                    child: child,
+                  ),
+                ),
+              );
             },
           )
         ],
@@ -67,13 +76,7 @@ class _CounterState extends State<Counter> {
         onRefresh: onRefresh,
         child: SingleChildScrollView(
           child: BlocBuilder<CounterBloc, CounterState>(
-            buildWhen: (preState, currentState) {
-              if (currentState is CounterValueState) {
-                _count = currentState.count;
-                return true;
-              }
-              return false;
-            },
+            buildWhen: blocCondition<CounterValueState>(),
             bloc: bloc,
             builder: (_, currentState) {
               return Container(
