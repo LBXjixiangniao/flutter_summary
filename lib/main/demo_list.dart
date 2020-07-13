@@ -24,6 +24,11 @@ class DemoList extends StatelessWidget {
           tapAction: () {
             Navigator.push(context, Router.routeForPage(page: ChinaRegionSelectPage()));
           }),
+      ItemInfo(
+          title: '列表数据缓存和预加载',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: ChinaRegionSelectPage()));
+          }),
     ];
     return Scaffold(
       backgroundColor: Colors.grey,
