@@ -98,7 +98,9 @@ class _ChinaRegionSelectState extends State<ChinaRegionSelect> {
                           child: Text(
                             '取消',
                             style: TextStyle(
+                              // fontFamily: PingFangType.regular,
                               fontSize: 16,
+                              // color: ColorHelper.Black153,
                             ),
                           ),
                         ),
@@ -116,7 +118,9 @@ class _ChinaRegionSelectState extends State<ChinaRegionSelect> {
                             child: Text(
                               '确定',
                               style: TextStyle(
+                                // fontFamily: PingFangType.regular,
                                 fontSize: 16,
+                                // color: ColorHelper.ThemeColor,
                               ),
                             ),
                           );

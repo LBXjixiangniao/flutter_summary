@@ -5,6 +5,8 @@ import 'package:flutter_summary/util/bind_state_callback.dart';
 import 'package:flutter_summary/widgets/toast.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
+import '../../../r.dart';
+
 class CountPage extends StatefulWidget {
   final int count;
   const CountPage({Key key, this.count}) : super(key: key);

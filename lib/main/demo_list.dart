@@ -11,6 +11,11 @@ class DemoList extends StatelessWidget {
           tapAction: () {
             Navigator.push(context, Router.routeForPage(page: Counter()));
           }),
+        ItemInfo(
+          title: 'bloc 使用用例',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: Counter()));
+          }),
     ];
     return Scaffold(
       backgroundColor: Colors.grey,
