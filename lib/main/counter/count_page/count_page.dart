@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_summary/main/counter/bloc/counter_bloc.dart';
 import 'package:flutter_summary/util/bind_state_callback.dart';
-import 'package:flutter_summary/util/global_method.dart';
 import 'package:flutter_summary/widgets/toast.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
