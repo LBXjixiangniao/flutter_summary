@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
+import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/router/router.dart';
+
+import 'china_region_select/china_region_select.dart';
 
 class DemoList extends StatelessWidget {
   @override
@@ -11,10 +14,15 @@ class DemoList extends StatelessWidget {
           tapAction: () {
             Navigator.push(context, Router.routeForPage(page: Counter()));
           }),
-        ItemInfo(
-          title: 'bloc 使用用例',
+      ItemInfo(
+          title: 'provider 使用用例',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: Counter()));
+            Navigator.push(context, Router.routeForPage(page: ProviderCounter()));
+          }),
+      ItemInfo(
+          title: '省市区选择',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: ChinaRegionSelectPage()));
           }),
     ];
     return Scaffold(
