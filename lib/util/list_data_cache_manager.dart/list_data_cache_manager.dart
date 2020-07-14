@@ -116,7 +116,9 @@ class ListDataCacheManager<T> {
     this.loadCacheData,
     this.requestNetworkData,
   })  : assert(dbLoadExtent > 0 && networkLoadExtent > 0 && dbLoadPageCount > 0),
-        assert(suggestCacheNum > dbLoadExtent);
+        assert(suggestCacheNum > dbLoadExtent) {
+    _itemMountCallBack = ListItemMountCallBack(_checkIndex);
+  }
 
   ///设置缓存数量，实际缓存数量不一定是该数值
   ///建议设置为大于_dbLoadPageCount + 当前页面显示条数

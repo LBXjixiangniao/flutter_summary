@@ -4,6 +4,9 @@ import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/router/router.dart';
 
 import 'china_region_select/china_region_select.dart';
+import 'list_data/list_data_page.dart';
+import 'order_task_manager/order_task_page.dart';
+import 'widget_loading/widget_loading_page.dart';
 
 class DemoList extends StatelessWidget {
   @override
@@ -27,7 +30,17 @@ class DemoList extends StatelessWidget {
       ItemInfo(
           title: '列表数据缓存和预加载',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: ChinaRegionSelectPage()));
+            Navigator.push(context, Router.routeForPage(page: ListDataPage()));
+          }),
+      ItemInfo(
+          title: '按顺序执行的步骤管理',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: OrderTaskPage()));
+          }),
+      ItemInfo(
+          title: '在小部件上loading',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: WidgetLoading()));
           }),
     ];
     return Scaffold(

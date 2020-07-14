@@ -16,7 +16,7 @@ class StepTask extends LinkedListEntry<StepTask> {
   ///如果返回true则自动执行下一步
   final StepFunction stepFunction;
 
-  StepTask({this.stepID, this.stepFunction}) {
+  StepTask({this.stepID, @required this.stepFunction}) {
     assert(stepFunction != null);
     stepID ??= DateTime.now().toString();
   }

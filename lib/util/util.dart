@@ -48,4 +48,10 @@ class Util {
       return DateTime(year, month, 0).day;
     }
   }
+
+  static bool get isInDebugMode {
+    bool inDebugMode = false;
+    assert(inDebugMode = true);
+    return inDebugMode;
+  }
 }

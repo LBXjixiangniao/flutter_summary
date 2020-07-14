@@ -6,8 +6,6 @@ import 'package:flutter_summary/const/app_config.dart';
 import 'package:flutter_summary/widgets/toast.dart';
 import 'package:jshare_flutter_plugin/jshare_flutter_plugin.dart';
 import 'package:path_provider/path_provider.dart';
-// import 'package:flutter_qq/flutter_qq.dart';
-// import 'package:fluwx/fluwx.dart' as fluwx;
 import 'package:url_launcher/url_launcher.dart';
 
 export 'package:jshare_flutter_plugin/jshare_flutter_plugin.dart';
@@ -169,14 +167,6 @@ class ShareManager {
   }
 
   static String get urlForApp => 'http://www.sunflyflat.com/app/index.html';
-
-  //  {
-  //   if (Platform.isIOS) {
-  //     return "https://itunes.apple.com/cn/app/id1490227691";
-  //   } else if (Platform.isAndroid) {
-  //     return "https://sj.qq.com/myapp/detail.htm?apkName=com.sunfly.smart_life_app";
-  //   }
-  // }
 
   static Future<String> _tempSaveImage(String imageName, String imagePath) async {
     print("Action - _tempSaveTestImage:");

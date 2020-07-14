@@ -42,16 +42,18 @@ dependencies:
   provider: ^4.3.0
   #获取包信息
   package_info: ^0.4.0+14
-  # shared_preferences: ^0.5.3+1
+  shared_preferences: ^0.5.3+1
   # cached_network_image: ^2.0.0
   # flutter_qr_reader: ^1.0.3
   #mqtt
-  # mqtt_client: ^5.6.3
+  mqtt_client: ^5.6.3
   #极光分享
   #支持sliver的排序控件
   reorderables: ^0.3.2
   #闪烁效果控件
   shimmer: ^1.1.1
+  #获取设备信息
+  device_info: ^0.4.2+4
   #虚线边框
   dotted_border: ^1.0.5
   # app跳转

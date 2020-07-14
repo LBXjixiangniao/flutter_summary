@@ -9,6 +9,9 @@ class WidgetLoadingBuilder extends StatefulWidget {
   final bool loading;
   final Duration timeoutDuration;
   final VoidCallback loadingTimeoutCallback;
+  final double width;
+  final double height;
+
   ///用于在loading状态切换成另一个loading
   final String loadingUid;
 
@@ -20,6 +23,8 @@ class WidgetLoadingBuilder extends StatefulWidget {
     @required this.child,
     this.timeoutDuration,
     this.loadingTimeoutCallback,
+    this.width,
+    this.height,
   })  : assert(child != null),
         super(key: key);
   @override
@@ -104,11 +109,22 @@ class _WidgetLoadingBuilderState extends State<WidgetLoadingBuilder> {
 
   @override
   Widget build(BuildContext context) {
-    return IntrinsicHeight(
-      child: Overlay(
-        key: _overLayKey,
-        initialEntries: [_childOverlayEntry],
-      ),
-    );
+    if (widget.width != null || widget.height != null) {
+      return SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: Overlay(
+          key: _overLayKey,
+          initialEntries: [_childOverlayEntry],
+        ),
+      );
+    } else {
+      return IntrinsicHeight(
+        child: Overlay(
+          key: _overLayKey,
+          initialEntries: [_childOverlayEntry],
+        ),
+      );
+    }
   }
 }
