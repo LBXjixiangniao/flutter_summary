@@ -117,8 +117,7 @@ mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
 按个人理解，按bloc的设计思路，数据和逻辑应该都是放在bloc中的。但是实际开发中有些页面会有许多的修改项，如果把数据都放在bloc中，那所有的编辑修改都需要通过`event->state`来实现，这样子就需要建很多的event和state，代码会显得臃肿，还不如直接将数据放到StatefulWdiget的state中，各种编辑修改都反映到数据中，然后通过setstate刷新UI。
 **bloc 总结 :** 使用`event->state`来进行状态管理，但是某些复杂页面或模块（如编辑修改等逻辑多的）可以视为一个小模块，模块管理自己相应的数据，模块外的状态管理还是使用`event->state`来进行。
 
-![](https://github.com/LBXjixiangniao/flutter_summary/blob/master/read_me_image/bloc_usage.png)
-
+![](./read_me_image/bloc_usage.png)
 
 ## 网络请求
 * #####  退出页面取消网络请求
@@ -289,7 +288,7 @@ Router.isPageAtTop(context，[PageA页面对应的widget或者state对象])
 
 ## 主要原理
 
-![](https://github.com/LBXjixiangniao/flutter_summary/blob/master/read_me_image/list_data_cache.png)
+![](./read_me_image/list_data_cache.png)
 
 
 * 红色部分为存储在内存中的数据
