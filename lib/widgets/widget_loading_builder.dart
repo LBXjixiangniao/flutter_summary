@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -142,6 +143,7 @@ const double BaseDotRadius = 20;
 
 class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with SingleTickerProviderStateMixin {
   AnimationController _animationController;
+  _CircleDotsPainter _dotPainter = _CircleDotsPainter();
   @override
   void initState() {
     super.initState();
@@ -176,8 +178,9 @@ class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with 
         transform: transform,
         alignment: Alignment.center,
         child: CustomPaint(
+          key: ValueKey(widget.size),
           size: widget.size != null ? Size(widget.size, widget.size) : null,
-          painter: _CircleDotsPainter(),
+          painter: _dotPainter,
         ),
       ),
     );
@@ -185,11 +188,22 @@ class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with 
 }
 
 class _CircleDotsPainter extends CustomPainter {
+  ///缓存渲染的视图，以免不停重复渲染
+  Picture _picture;
+
   @override
   void paint(Canvas canvas, Size size) {
-    print(size);
     canvas.save();
+    _picture ??= renderAsPicture(size);
     canvas.translate(size.width / 2, size.height / 2);
+    canvas.drawPicture(_picture);
+
+    canvas.restore();
+  }
+
+  Picture renderAsPicture(Size size) {
+    PictureRecorder recorder = PictureRecorder();
+    Canvas canvas = Canvas(recorder);
     double radius = min(size.width, size.height) / 2;
     for (int i = 0; i < (2 * pi) ~/ AngleUnit; i++) {
       double angle = i * AngleUnit;
@@ -199,7 +213,7 @@ class _CircleDotsPainter extends CustomPainter {
       canvas.drawCircle(
           Offset(x, y), 1 * pow(DotScaleUnit, powNumber) * radius / BaseDotRadius, Paint()..color = Colors.yellow);
     }
-    canvas.restore();
+    return recorder.endRecording();
   }
 
   @override
