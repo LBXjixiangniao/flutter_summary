@@ -6,7 +6,7 @@ extension DoubleExtension on int {
       } else if (value is int) {
         return value.toDouble();
       } else if (value is String) {
-        return double.parse(value);
+        return double.tryParse(value);
       } else {
         return null;
       }

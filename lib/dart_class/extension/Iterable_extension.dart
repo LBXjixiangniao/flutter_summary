@@ -9,7 +9,7 @@ extension IterableExtension<E> on Iterable<E> {
 
   E get firstOrNull => isNotNullAndEmpty ? first : null;
 
-  int get notNulllength => this == null ? 0 : length;
+  int get notNullLength => this == null ? 0 : length;
 }
 
 extension MapExtension<K, V> on Map<K, V> {
@@ -21,5 +21,5 @@ extension MapExtension<K, V> on Map<K, V> {
     }
   }
 
-  int get notNulllength => this == null ? 0 : length;
+  int get notNullLength => this == null ? 0 : length;
 }

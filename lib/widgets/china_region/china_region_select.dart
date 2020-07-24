@@ -147,7 +147,7 @@ class _ChinaRegionSelectState extends State<ChinaRegionSelect> {
                           builder: (context, refresh) {
                             int initialIndex = 0;
                             if (selectedProvince != null) {
-                              for (int i = 0; i < allProvince.notNulllength; i++) {
+                              for (int i = 0; i < allProvince.notNullLength; i++) {
                                 if (allProvince[i].id == selectedProvince.id) {
                                   initialIndex = i;
                                   break;
@@ -195,7 +195,7 @@ class _ChinaRegionSelectState extends State<ChinaRegionSelect> {
                             cityRefresh = refresh;
                             int initialIndex = 0;
                             if (selectedCity != null) {
-                              for (int i = 0; i < pickerCity.notNulllength; i++) {
+                              for (int i = 0; i < pickerCity.notNullLength; i++) {
                                 if (pickerCity[i].id == selectedCity.id) {
                                   initialIndex = i;
                                   break;
@@ -239,7 +239,7 @@ class _ChinaRegionSelectState extends State<ChinaRegionSelect> {
                             List<RegionModel> countyList = allCounty != null ? allCounty[selectedCity.id] : null;
                             int initialIndex = 0;
                             if (selectedCounty != null) {
-                              for (int i = 0; i < countyList.notNulllength; i++) {
+                              for (int i = 0; i < countyList.notNullLength; i++) {
                                 if (countyList[i].id == selectedCounty.id) {
                                   initialIndex = i;
                                   break;
