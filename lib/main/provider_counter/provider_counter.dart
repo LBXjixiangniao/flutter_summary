@@ -16,6 +16,9 @@ class ProviderCounter extends StatelessWidget {
       ),
       body: ChangeNotifierProvider(
         create: (BuildContext context) => _counterModel,
+        builder: (context, child) {
+          return child;
+        },
         child: Consumer<CounterModel>(
           builder: (BuildContext context, CounterModel value, Widget child) {
             return SmartRefresher(

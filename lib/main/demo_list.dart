@@ -6,6 +6,7 @@ import 'package:flutter_summary/router/router.dart';
 import 'china_region_select/china_region_select.dart';
 import 'list_data/list_data_page.dart';
 import 'order_task_manager/order_task_page.dart';
+import 'parentdata_widget/parent_data_widget_demo.dart';
 import 'widget_loading/widget_loading_page.dart';
 
 class DemoList extends StatelessWidget {
@@ -41,6 +42,11 @@ class DemoList extends StatelessWidget {
           title: '在小部件上loading',
           tapAction: () {
             Navigator.push(context, Router.routeForPage(page: WidgetLoading()));
+          }),
+      ItemInfo(
+          title: 'ParenDataWidget用例',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: ParentDataWidgetDemo()));
           }),
     ];
     return Scaffold(

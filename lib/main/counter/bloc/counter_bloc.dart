@@ -1,13 +1,14 @@
 import 'dart:async';
 
-import 'package:flutter_summary/dart_class/abstract/bloc_abstract.dart';
-import 'package:flutter_summary/dart_class/mixn/bloc_mixin.dart';
+import 'package:bloc/bloc.dart';
+import 'package:flutter_summary/dart_class/abstract/listenable_dispose.dart';
+import 'package:flutter_summary/dart_class/mixin/bloc_mixin.dart';
 import 'package:flutter_summary/util/bind_state_callback.dart';
 import 'package:meta/meta.dart';
 part 'counter_event.dart';
 part 'counter_state.dart';
 
-class CounterBloc extends BlocCloseNotificationsAbstract<CounterEvent, CounterState> with BlocAddStateMixin {
+class CounterBloc extends Bloc<CounterEvent, CounterState> with BlocAddStateMixin,ListenableDispose,DisposeNotifierBloc {
   CounterBloc() : super(CounterInitial());
 
   ///模拟网络数据count

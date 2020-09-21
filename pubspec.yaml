@@ -58,11 +58,11 @@ dependencies:
   dotted_border: ^1.0.5
   # app跳转
   url_launcher: ^5.4.5
-  jshare_flutter_plugin: ^1.0.2
+  # jshare_flutter_plugin: ^1.0.2
   permission_handler:
     path: ./local_packages/permission_handler-5.0.1+1/
-  jpush_flutter:
-    path: ./local_packages/jpush_flutter-0.5.5/
+  # jpush_flutter:
+  #   path: ./local_packages/jpush_flutter-0.5.5/
 
 dev_dependencies:
   flutter_test:

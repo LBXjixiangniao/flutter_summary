@@ -1,7 +1,7 @@
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_summary/dart_class/mixn/dispose_listenable.dart';
+import '../../dart_class/abstract/listenable_dispose.dart';
 import 'package:flutter_summary/util/util.dart';
 
 const String IsUseToken = 'isUseToken';
@@ -18,17 +18,17 @@ class NetworkResponse<R> {
 }
 
 class CustomCanceltoken extends CancelToken {
-  final DisposeListenable listenableDispose;
-  VoidCallback _disposeListener;
+  final ListenableDispose listenableDispose;
+  DisposeListener _disposeListener;
   CustomCanceltoken({this.listenableDispose}) {
     if (listenableDispose != null) {
-      _disposeListener = (() {
+      _disposeListener = DisposeListener(() {
         cancel();
-        listenableDispose.removeListener(_disposeListener);
+        _disposeListener.cancel();
       });
       listenableDispose.addDisposeListener(_disposeListener);
       whenCancel.then((onValue) {
-        listenableDispose.removeListener(_disposeListener);
+        _disposeListener?.cancel();
       });
     }
   }
@@ -38,7 +38,7 @@ class CustomCanceltoken extends CancelToken {
 
   void close() {
     _isCompleted = true;
-    listenableDispose.removeListener(_disposeListener);
+    _disposeListener?.cancel();
   }
 }
 
@@ -163,7 +163,15 @@ class NetworkDio {
     }
     RequestOptions requestOptions = RequestOptions(method: method, extra: extraMap);
 // DioMixin
-    return shareDio.request(url, data: body, options: requestOptions, cancelToken: cancelToken).whenComplete(() {
+    return shareDio
+        .request(
+      url,
+      data: method == 'POST' ? body : null,
+      options: requestOptions,
+      cancelToken: cancelToken,
+      queryParameters: method == 'GET' ? body : null,
+    )
+        .whenComplete(() {
       cancelToken?.close();
     }).then((response) async {
       DioError responseError() {
