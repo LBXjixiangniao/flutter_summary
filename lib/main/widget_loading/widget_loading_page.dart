@@ -19,7 +19,6 @@ class _WidgetLoadingState extends State<WidgetLoading> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: <Widget>[
           WidgetLoadingBuilder(
-            height: 80,
             loading: _isLoading,
             timeoutDuration: Duration(seconds: 3),
             loadingbuilder: (context) => CircleDotsLoadingWidget(color: Colors.red,size: 40,),

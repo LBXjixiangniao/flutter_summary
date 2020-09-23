@@ -11,8 +11,6 @@ class WidgetLoadingBuilder extends StatefulWidget {
   final bool loading;
   final Duration timeoutDuration;
   final VoidCallback loadingTimeoutCallback;
-  final double width;
-  final double height;
 
   ///用于在loading状态切换成另一个loading
   final String loadingUid;
@@ -25,8 +23,6 @@ class WidgetLoadingBuilder extends StatefulWidget {
     @required this.child,
     this.timeoutDuration,
     this.loadingTimeoutCallback,
-    this.width,
-    this.height,
   })  : assert(child != null),
         super(key: key);
   @override
@@ -34,96 +30,54 @@ class WidgetLoadingBuilder extends StatefulWidget {
 }
 
 class _WidgetLoadingBuilderState extends State<WidgetLoadingBuilder> {
-  OverlayEntry _childOverlayEntry;
-  OverlayEntry _loadingOverlayEntry;
-  GlobalKey<OverlayState> _overLayKey = GlobalKey();
   Timer _timeoutTimer;
 
   @override
   void initState() {
     super.initState();
-    _childOverlayEntry = OverlayEntry(builder: (_) => widget.child);
-    Timer.run(() {
-      changeLoading();
-    });
+    setupTimer();
   }
 
-  void changeLoading() {
-    ///显示或者隐藏
-    _timeoutTimer?.cancel();
-
-    OverlayEntry tmpLoading;
-    if (widget.loading == true) {
-      ///添加loading
-      tmpLoading = loadingOverlayEntry();
-      _overLayKey.currentState.insert(tmpLoading);
-
-      ///设定超时
-      if (widget.timeoutDuration != null) {
-        _timeoutTimer = Timer(widget.timeoutDuration, () {
-          if (_loadingOverlayEntry != null) {
-            _loadingOverlayEntry.remove();
-            _loadingOverlayEntry = null;
-          }
-          if (widget.loadingTimeoutCallback != null) {
-            widget.loadingTimeoutCallback();
-          }
-        });
-      }
+  void setupTimer() {
+    ///设定超时
+    if (widget.timeoutDuration != null && widget.loading == true && widget.loadingTimeoutCallback != null) {
+      _timeoutTimer = Timer(widget.timeoutDuration, () {
+        widget.loadingTimeoutCallback?.call();
+      });
     }
-
-    ///删除旧的loading
-    if (_loadingOverlayEntry != null) {
-      _loadingOverlayEntry.remove();
-    }
-
-    _loadingOverlayEntry = tmpLoading;
-  }
-
-  OverlayEntry loadingOverlayEntry() {
-    return OverlayEntry(
-      builder: (_) => widget.loadingbuilder != null
-          ? widget.loadingbuilder(context)
-          : Container(
-              color: Color(0x11333333),
-              child: Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Colors.black),
-                ),
-              ),
-            ),
-    );
   }
 
   @override
   void didUpdateWidget(WidgetLoadingBuilder oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if ((widget.loading == true && (_loadingOverlayEntry == null || widget.loadingUid != oldWidget.loadingUid)) ||
-        (widget.loading != true && _loadingOverlayEntry != null) ||
-        widget.loadingbuilder != null) {
-      changeLoading();
-    }
+    setupTimer();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _timeoutTimer?.cancel();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (widget.width != null || widget.height != null) {
-      return SizedBox(
-        width: widget.width,
-        height: widget.height,
-        child: Overlay(
-          key: _overLayKey,
-          initialEntries: [_childOverlayEntry],
+    return Stack(
+      alignment: AlignmentDirectional.center,
+      children: [
+        IgnorePointer(
+          ignoring: widget.loading == true,
+          child: widget.child,
         ),
-      );
-    } else {
-      return IntrinsicHeight(
-        child: Overlay(
-          key: _overLayKey,
-          initialEntries: [_childOverlayEntry],
-        ),
-      );
-    }
+        if (widget.loading)
+          widget.loadingbuilder == null
+              ? CircleDotsLoadingWidget(
+                  // color: ColorHelper.ThemeColor,
+                  color: Colors.yellow,
+                  size: 24,
+                )
+              : widget.loadingbuilder(context),
+      ],
+    );
   }
 }
 
@@ -143,10 +97,11 @@ const double BaseDotRadius = 20;
 
 class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with SingleTickerProviderStateMixin {
   AnimationController _animationController;
-  _CircleDotsPainter _dotPainter = _CircleDotsPainter();
+  _CircleDotsPainter _dotPainter;
   @override
   void initState() {
     super.initState();
+    _dotPainter = _CircleDotsPainter(widget.color);
     _animationController = AnimationController(
       value: 0.0,
       lowerBound: 0.0,
@@ -170,10 +125,9 @@ class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with 
   Widget build(BuildContext context) {
     final double turnsValue = _animationController.value;
     final Matrix4 transform = Matrix4.rotationZ(turnsValue * pi * 2.0);
-    return Container(
+    return SizedBox(
       height: widget.size,
       width: widget.size,
-      alignment: Alignment.center,
       child: Transform(
         transform: transform,
         alignment: Alignment.center,
@@ -188,8 +142,12 @@ class _CircleDotsLoadingWidgetState extends State<CircleDotsLoadingWidget> with 
 }
 
 class _CircleDotsPainter extends CustomPainter {
+  final Color color;
+
   ///缓存渲染的视图，以免不停重复渲染
   Picture _picture;
+
+  _CircleDotsPainter(this.color);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -210,8 +168,8 @@ class _CircleDotsPainter extends CustomPainter {
       double x = radius * cos(angle);
       double y = radius * sin(angle);
       int powNumber = (angle - pi).abs() ~/ AngleUnit;
-      canvas.drawCircle(
-          Offset(x, y), 1 * pow(DotScaleUnit, powNumber) * radius / BaseDotRadius, Paint()..color = Colors.yellow);
+      canvas.drawCircle(Offset(x, y), 1 * pow(DotScaleUnit, powNumber) * radius / BaseDotRadius,
+          Paint()..color = color ?? Colors.yellow);
     }
     return recorder.endRecording();
   }
