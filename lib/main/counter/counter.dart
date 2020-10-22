@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Router;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_summary/main/counter/bloc/counter_bloc.dart';
 import 'package:flutter_summary/router/router.dart';

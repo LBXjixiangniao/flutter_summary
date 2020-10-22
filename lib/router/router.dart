@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/demo_list.dart';
 
+const PAGE_WRAP_BUILDER = 'PAGE_WRAP_BUILDER';
+const ROUTE_BUILDER = 'ROUTE_BUILDER';
 typedef PageWrapBuilder = Widget Function(Widget child, BuildContext context);
 typedef RouteBuilder = Route<dynamic> Function(WidgetBuilder pageBuilder, RouteSettings setting);
 
@@ -9,10 +11,12 @@ class Router {
   static Router _routes = Router._();
   List<String> _routesName = [];
 
+  ///launch页
   static String root = "/";
   static get rootPageBuilder => (_) => DemoList();
 
-  static String _routeNameForPage(Type page) => page.toString();
+
+  static String _routeNameForPageType(Type page) => page.toString();
 
   ///创建Route，routeName是page.runtimeType.toString()
   static Route<dynamic> routeForPage({
@@ -21,17 +25,26 @@ class Router {
     RouteBuilder customRouteBuilder,
   }) {
     assert(page != null);
-    String routeName = _routeNameForPage(page.runtimeType);
+    String routeName = _routeNameForPageType(page.runtimeType);
     WidgetBuilder builder;
     if (pageWrapBuilder != null) {
       builder = (context) => pageWrapBuilder(page, context);
     } else {
       builder = (_) => page;
     }
-    if (customRouteBuilder != null) {
-      return customRouteBuilder(builder, RouteSettings(name: routeName));
+    if (routeName != null) {
+      if (customRouteBuilder != null) {
+        return customRouteBuilder(builder, RouteSettings(name: routeName));
+      } else {
+        return MaterialPageRoute(builder: builder, settings: RouteSettings(name: routeName));
+      }
     } else {
-      return MaterialPageRoute(builder: builder, settings: RouteSettings(name: routeName));
+      return MaterialPageRoute(
+          builder: (_) => Scaffold(
+                appBar: AppBar(
+                  title: Text('无指定页面'),
+                ),
+              ));
     }
   }
 
@@ -40,14 +53,17 @@ class Router {
     assert(page is State || page is Widget);
     String currentRouteName = ModalRoute.of(context).settings.name;
     Widget widget = page is Widget ? page : (page as State).widget;
-    return _routeNameForPage(widget.runtimeType) == currentRouteName;
+    return _routeNameForPageType(widget.runtimeType) == currentRouteName;
   }
 
   ///页面对应的路由名称
   static String routeNameForPage(dynamic page) {
-    assert(page is State || page is Widget);
+    assert(page is State || page is Widget || page is Type);
+    if (page is Type) {
+      return _routeNameForPageType(page);
+    }
     Widget widget = page is Widget ? page : (page as State).widget;
-    return _routeNameForPage(widget.runtimeType);
+    return _routeNameForPageType(widget.runtimeType);
   }
 
   ///记录push的routeName
@@ -62,18 +78,10 @@ class Router {
     }
   }
 
-  ///前一个route的name
+  ///最后一个route的name
   static String get previousRouteName {
     if (_routes._routesName.length > 1) {
       return _routes._routesName[_routes._routesName.length - 2];
-    }
-    return null;
-  }
-
-  ///最后一个route的name
-  static String get lastRouteName {
-    if (_routes._routesName is List) {
-      return _routes._routesName.last;
     }
     return null;
   }
@@ -84,7 +92,7 @@ class Router {
     return _routes._routesName?.reversed?.firstWhere((test) => test != null, orElse: () => null);
   }
 
-  static RoutePredicate routeFilter(String routeName) => (route) => route.settings.name == routeName;
+  static RoutePredicate filterRoute(String routeName) => (route) => route.settings.name == routeName;
 }
 
 ///用来监听路由push和pop

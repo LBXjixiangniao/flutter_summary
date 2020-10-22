@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Router;
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/router/router.dart';

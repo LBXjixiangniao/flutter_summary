@@ -27,7 +27,7 @@ class DefaultAppBar extends AppBar {
       double bottomOpacity = 1.0})
       : super(
           key: key,
-          leading: leading ?? DefaultAppBarLeading(),
+          leading: leading ?? (automaticallyImplyLeading == true ? DefaultAppBarLeading() : null),
           automaticallyImplyLeading: automaticallyImplyLeading,
           title: title ?? (titleText != null ? Text(titleText) : null),
           actions: actions ??
