@@ -4,6 +4,7 @@ import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/router/router.dart';
 
 import 'china_region_select/china_region_select.dart';
+import 'hit_test/hit_test_manager.dart';
 import 'list_data/list_data_page.dart';
 import 'order_task_manager/order_task_page.dart';
 import 'parentdata_widget/parent_data_widget_demo.dart';
@@ -47,6 +48,11 @@ class DemoList extends StatelessWidget {
           title: 'ParenDataWidget用例',
           tapAction: () {
             Navigator.push(context, Router.routeForPage(page: ParentDataWidgetDemo()));
+          }),
+      ItemInfo(
+          title: 'hitTest',
+          tapAction: () {
+            Navigator.push(context, Router.routeForPage(page: HitTestManager()));
           }),
     ];
     return Scaffold(

@@ -77,7 +77,7 @@ class _CounterState extends State<Counter> {
         child: SingleChildScrollView(
           child: BlocBuilder<CounterBloc, CounterState>(
             buildWhen: blocCondition<CounterValueState>(),
-            bloc: bloc,
+            cubit: bloc,
             builder: (_, currentState) {
               return Container(
                 height: 100,
