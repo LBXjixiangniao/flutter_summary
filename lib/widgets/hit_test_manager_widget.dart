@@ -2,13 +2,76 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 // ignore: must_be_immutable
-class HitTestManagerWidget extends SingleChildRenderObjectWidget {
+class HitTestCheckWidget extends SingleChildRenderObjectWidget {
+  final bool Function(Offset) checkHitTestPermission;
+  HitTestCheckWidget({Key key, Widget child, this.checkHitTestPermission}) : super(key: key,child: child);
+
+  @override
+  _HitTestCheckRenderObject createRenderObject(BuildContext context) {
+    return _HitTestCheckRenderObject()..checkHitTestPermission = checkHitTestPermission;
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, covariant _HitTestCheckRenderObject renderObject) {
+    renderObject.checkHitTestPermission = checkHitTestPermission;
+  }
+}
+
+class _HitTestCheckRenderObject extends RenderProxyBox {
+  bool Function(Offset) checkHitTestPermission;
+
+  @override
+  void handleEvent(PointerEvent event, covariant HitTestEntry entry) {
+    print('_HitTestCheckRenderObject$event');
+    super.handleEvent(event, entry);
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {Offset position}) {
+    if(checkHitTestPermission != null && checkHitTestPermission(position) == false)  return false;
+    return super.hitTest(result, position: position);
+  }
+}
+
+class HitTestAbsorbCheckWidget extends SingleChildRenderObjectWidget {
+  final bool Function(Offset) checkHitTestAbsorb;
+  HitTestAbsorbCheckWidget({Key key, Widget child, this.checkHitTestAbsorb}) : super(key: key,child: child);
+
+  @override
+  _HitTestAbsorbCheckRenderObject createRenderObject(BuildContext context) {
+    return _HitTestAbsorbCheckRenderObject()..checkHitTestAbsorb = checkHitTestAbsorb;
+  }
+
+  @override
+  void updateRenderObject(BuildContext context, covariant _HitTestAbsorbCheckRenderObject renderObject) {
+    renderObject.checkHitTestAbsorb = checkHitTestAbsorb;
+  }
+}
+
+class _HitTestAbsorbCheckRenderObject extends RenderProxyBox {
+  bool Function(Offset) checkHitTestAbsorb;
+
+  @override
+  void handleEvent(PointerEvent event, covariant HitTestEntry entry) {
+    print('_HitTestAbsorbCheckRenderObject$event');
+    super.handleEvent(event, entry);
+  }
+
+  @override
+  bool hitTest(BoxHitTestResult result, {Offset position}) {
+    bool b = super.hitTest(result, position: position);
+    return b || checkHitTestAbsorb?.call(position) == true;
+  }
+}
+
+// ignore: must_be_immutable
+class HitTestIgnoreManagerWidget extends SingleChildRenderObjectWidget {
   final bool ignoreHitTest;
   final Widget Function(Widget child) ignoreWidgetBuilder;
 
   Widget hitTestWidget;
-  HitTestManagerWidget({Key key, Widget hitestChild, this.ignoreWidgetBuilder, this.ignoreHitTest = true}) : super(key: key) {
-    hitTestWidget = WidgetWithRenderObject(
+  HitTestIgnoreManagerWidget({Key key, Widget hitestChild, this.ignoreWidgetBuilder, this.ignoreHitTest = true}) : super(key: key) {
+    hitTestWidget = _WidgetWithRenderObject(
       child: hitestChild,
     );
   }
@@ -16,30 +79,28 @@ class HitTestManagerWidget extends SingleChildRenderObjectWidget {
   @override
   Widget get child => ignoreWidgetBuilder?.call(hitTestWidget) ?? hitTestWidget;
   @override
-  HitTestManagerRenderObject createRenderObject(BuildContext context) {
-    return HitTestManagerRenderObject()..ignoreHitTest = ignoreHitTest;
+  _HitTestManagerRenderObject createRenderObject(BuildContext context) {
+    return _HitTestManagerRenderObject()..ignoreHitTest = ignoreHitTest;
   }
 
   @override
-  void updateRenderObject(BuildContext context, covariant HitTestManagerRenderObject renderObject) {
+  void updateRenderObject(BuildContext context, covariant _HitTestManagerRenderObject renderObject) {
     renderObject.ignoreHitTest = ignoreHitTest;
   }
 }
 
-class HitTestManagerRenderObject extends RenderProxyBox {
+class _HitTestManagerRenderObject extends RenderProxyBox {
   bool ignoreHitTest = false;
   Offset paintOffset;
-
-  HitTestManagerRenderObject();
 
   @override
   bool hitTest(BoxHitTestResult result, {Offset position}) {
     if (ignoreHitTest && size.contains(position)) {
-      HitTestRenderObject hitTestRenderObject;
+      _HitTestRenderObject hitTestRenderObject;
 
       void visit(RenderObject renderObject) {
         assert(hitTestRenderObject == null); // this verifies that there's only one child
-        if (renderObject is HitTestRenderObject)
+        if (renderObject is _HitTestRenderObject)
           hitTestRenderObject = renderObject;
         else
           renderObject.visitChildren(visit);
@@ -62,19 +123,19 @@ class HitTestManagerRenderObject extends RenderProxyBox {
   }
 }
 
-class WidgetWithRenderObject extends SingleChildRenderObjectWidget {
-  WidgetWithRenderObject({
+class _WidgetWithRenderObject extends SingleChildRenderObjectWidget {
+  _WidgetWithRenderObject({
     Key key,
     Widget child,
   }) : super(key: key, child: child);
 
   @override
-  HitTestRenderObject createRenderObject(BuildContext context) {
-    return HitTestRenderObject();
+  _HitTestRenderObject createRenderObject(BuildContext context) {
+    return _HitTestRenderObject();
   }
 }
 
-class HitTestRenderObject extends RenderProxyBox {
+class _HitTestRenderObject extends RenderProxyBox {
   Offset paintOffset;
   @override
   bool hitTest(BoxHitTestResult result, {Offset position}) {
