@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:provider/single_child_widget.dart';
 
 class HitTestManager extends StatefulWidget {
   @override
@@ -16,7 +15,7 @@ class _HitTestManagerState extends State<HitTestManager> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           HitTestManagerWidget(
-            ignoreHitTest: true,
+            ignoreHitTest: false,
             ignoreWidgetBuilder: (child) => GestureDetector(
               onTap: () {
                 print('tap one');
@@ -62,58 +61,83 @@ class HitTestManagerWidget extends SingleChildRenderObjectWidget {
   final Widget Function(Widget child) ignoreWidgetBuilder;
 
   Widget hitTestWidget;
-  RenderProxyBox hitTestRenderObject;
-  HitTestManagerWidget({Key key, Widget hitestChild, this.ignoreWidgetBuilder, this.ignoreHitTest = true})
-      : super(key: key) {
-    if (ignoreHitTest == true) {
-      hitTestRenderObject = RenderProxyBox();
-      hitTestWidget = WidgetWithRenderObject(
-        child: hitestChild,
-        renderObject: hitTestRenderObject,
-      );
-    } else {
-      hitTestWidget = hitestChild;
-    }
+  HitTestManagerWidget({Key key, Widget hitestChild, this.ignoreWidgetBuilder, this.ignoreHitTest = true}) : super(key: key) {
+    hitTestWidget = WidgetWithRenderObject(
+      child: hitestChild,
+    );
   }
 
   @override
   Widget get child => ignoreWidgetBuilder?.call(hitTestWidget) ?? hitTestWidget;
   @override
   HitTestManagerRenderObject createRenderObject(BuildContext context) {
-    return HitTestManagerRenderObject(hitTestRenderObject);
+    return HitTestManagerRenderObject()..ignoreHitTest = ignoreHitTest;
   }
 
   @override
-  void updateRenderObject(BuildContext context, covariant RenderObject renderObject) {
-    // return renderObject;
+  void updateRenderObject(BuildContext context, covariant HitTestManagerRenderObject renderObject) {
+    renderObject.ignoreHitTest = ignoreHitTest;
   }
 }
 
 class HitTestManagerRenderObject extends RenderProxyBox {
-  final RenderProxyBox hitTestRenderObject;
+  bool ignoreHitTest = false;
+  Offset paintOffset;
 
-  HitTestManagerRenderObject(this.hitTestRenderObject);
+  HitTestManagerRenderObject();
 
   @override
   bool hitTest(BoxHitTestResult result, {Offset position}) {
-    if (hitTestRenderObject != null) {
-      hitTestRenderObject.hitTest(result, position: position);
-      return false;
+    if (ignoreHitTest && size.contains(position)) {
+      HitTestRenderObject hitTestRenderObject;
+
+      void visit(RenderObject renderObject) {
+        assert(hitTestRenderObject == null); // this verifies that there's only one child
+        if (renderObject is HitTestRenderObject)
+          hitTestRenderObject = renderObject;
+        else
+          renderObject.visitChildren(visit);
+      }
+
+      visit(child);
+
+      if (hitTestRenderObject != null) {
+        hitTestRenderObject.hitTest(result, position: position - (hitTestRenderObject.paintOffset - paintOffset));
+        return false;
+      }
     }
     return super.hitTest(result, position: position);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    paintOffset = offset;
+    super.paint(context, offset);
   }
 }
 
 class WidgetWithRenderObject extends SingleChildRenderObjectWidget {
-  final RenderProxyBox renderObject;
   WidgetWithRenderObject({
     Key key,
     Widget child,
-    this.renderObject,
   }) : super(key: key, child: child);
 
   @override
-  RenderObject createRenderObject(BuildContext context) {
-    return renderObject;
+  HitTestRenderObject createRenderObject(BuildContext context) {
+    return HitTestRenderObject();
+  }
+}
+
+class HitTestRenderObject extends RenderProxyBox {
+  Offset paintOffset;
+  @override
+  bool hitTest(BoxHitTestResult result, {Offset position}) {
+    return super.hitTest(result, position: position);
+  }
+
+  @override
+  void paint(PaintingContext context, Offset offset) {
+    paintOffset = offset;
+    super.paint(context, offset);
   }
 }
