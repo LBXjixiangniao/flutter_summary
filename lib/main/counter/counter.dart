@@ -59,7 +59,7 @@ class _CounterState extends State<Counter> {
             onTap: () {
               Navigator.push(
                 context,
-                Router.routeForPage(
+                RouterManager.routeForPage(
                   page: CountPage(),
                   pageWrapBuilder: (child, context) => BlocProvider.value(
                     value: bloc,

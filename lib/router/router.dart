@@ -6,10 +6,12 @@ const ROUTE_BUILDER = 'ROUTE_BUILDER';
 typedef PageWrapBuilder = Widget Function(Widget child, BuildContext context);
 typedef RouteBuilder = Route<dynamic> Function(WidgetBuilder pageBuilder, RouteSettings setting);
 
-class Router {
-  Router._();
-  static Router _routes = Router._();
+class RouterManager {
+  RouterManager._();
+  static RouterManager _routes = RouterManager._();
   List<String> _routesName = [];
+
+  List<String> get routesName => List.from(_routesName);
 
   ///launch页
   static String root = "/";
@@ -78,7 +80,7 @@ class Router {
     }
   }
 
-  ///最后一个route的name
+  ///前一个route的name
   static String get previousRouteName {
     if (_routes._routesName.length > 1) {
       return _routes._routesName[_routes._routesName.length - 2];
@@ -102,25 +104,25 @@ class CustomNavigatorObserver extends NavigatorObserver {
     super.didPush(route, previousRoute);
 
     ///如果没有给route设置name的话，默认name是null
-    Router._pushRouteName(route.settings.name);
+    RouterManager._pushRouteName(route.settings.name);
   }
 
   @override
   void didPop(Route route, Route previousRoute) {
     super.didPop(route, previousRoute);
-    Router._popRouteName();
+    RouterManager._popRouteName();
   }
 
   @override
   void didRemove(Route route, Route previousRoute) {
     super.didRemove(route, previousRoute);
-    Router._popRouteName();
+    RouterManager._popRouteName();
   }
 
   @override
   void didReplace({Route newRoute, Route oldRoute}) {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    Router._popRouteName();
-    Router._pushRouteName(newRoute.settings.name);
+    RouterManager._popRouteName();
+    RouterManager._pushRouteName(newRoute.settings.name);
   }
 }

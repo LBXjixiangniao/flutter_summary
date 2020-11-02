@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart' hide Router;
+import 'package:flutter_summary/lifecycle/lifecycle.dart';
 import 'package:flutter_summary/router/router.dart';
+import 'package:flutter_summary/styles/pingfang_textstyle.dart';
 import 'package:oktoast/oktoast.dart';
+
+import 'styles/color_helper.dart';
 
 void main() {
   runApp(MyApp());
@@ -29,8 +33,37 @@ class MyApp extends StatelessWidget {
           // the app on. For desktop platforms, the controls will be smaller and
           // closer together (more dense) than on mobile platforms.
           visualDensity: VisualDensity.adaptivePlatformDensity,
+
+          fontFamily: PingFangType.medium,
+            textTheme: TextTheme(
+              headline5: CustomTextStyle.h1,
+              headline6: CustomTextStyle.h2,
+              subtitle1: CustomTextStyle.h2,
+              subtitle2: CustomTextStyle.body,
+              bodyText1: CustomTextStyle.bodyBold,
+              bodyText2: CustomTextStyle.body,
+              caption: CustomTextStyle.captionLight,
+            ),
+            appBarTheme: AppBarTheme(
+              elevation: 1,
+              color: Colors.white,
+              brightness: Brightness.light,
+              iconTheme: IconThemeData(color: ColorHelper.Black51),
+              actionsIconTheme: IconThemeData(color: ColorHelper.Black33),
+              textTheme: TextTheme(
+                button: CustomTextStyle.h2,
+                headline6: CustomTextStyle.h1,
+              ),
+            ),
+            dividerColor: ColorHelper.DividerColor,
+            scaffoldBackgroundColor: ColorHelper.BGColor
         ),
-        routes: {Router.root: Router.rootPageBuilder},
+        routes: {
+          RouterManager.root: (ctx) {
+            LifeCycle.initApp(ctx);
+            return RouterManager.rootPageBuilder(ctx);
+          }
+        },
       ),
     );
   }

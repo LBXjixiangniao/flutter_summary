@@ -17,42 +17,42 @@ class DemoList extends StatelessWidget {
       ItemInfo(
           title: 'bloc 使用用例',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: Counter()));
+            Navigator.push(context, RouterManager.routeForPage(page: Counter()));
           }),
       ItemInfo(
           title: 'provider 使用用例',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: ProviderCounter()));
+            Navigator.push(context, RouterManager.routeForPage(page: ProviderCounter()));
           }),
       ItemInfo(
           title: '省市区选择',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: ChinaRegionSelectPage()));
+            Navigator.push(context, RouterManager.routeForPage(page: ChinaRegionSelectPage()));
           }),
       ItemInfo(
           title: '列表数据缓存和预加载',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: ListDataPage()));
+            Navigator.push(context, RouterManager.routeForPage(page: ListDataPage()));
           }),
       ItemInfo(
           title: '按顺序执行的步骤管理',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: OrderTaskPage()));
+            Navigator.push(context, RouterManager.routeForPage(page: OrderTaskPage()));
           }),
       ItemInfo(
           title: '在小部件上loading',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: WidgetLoading()));
+            Navigator.push(context, RouterManager.routeForPage(page: WidgetLoading()));
           }),
       ItemInfo(
           title: 'ParenDataWidget用例',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: ParentDataWidgetDemo()));
+            Navigator.push(context, RouterManager.routeForPage(page: ParentDataWidgetDemo()));
           }),
       ItemInfo(
           title: 'hitTest',
           tapAction: () {
-            Navigator.push(context, Router.routeForPage(page: HitTestManager()));
+            Navigator.push(context, RouterManager.routeForPage(page: HitTestManager()));
           }),
     ];
     return Scaffold(

@@ -19,7 +19,7 @@ class LifeCycle with WidgetsBindingObserver {
   }
 
 ///App 初始化
-  static initApp() async {
+  static initApp(BuildContext context) async {
     // ShareManager.init();
   }
 
