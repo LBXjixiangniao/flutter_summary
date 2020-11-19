@@ -1,7 +1,7 @@
 import 'dart:async';
-import 'dart:collection';
-
 import 'package:flutter/material.dart';
+
+import 'custom_linked_list.dart';
 
 typedef Widget ListWidgetBuilder<T>(ListCacheItem<T> cacheItem, BuildContext context);
 const int ExtraExtent = 10;
@@ -135,7 +135,10 @@ class ListDataCacheManager<T> {
   void Function(int startIndex) requestNetworkData;
 
   ///内存中存储的数据
-  LinkedList<ListCacheItem> _cacheList = LinkedList<ListCacheItem>();
+  CustomLinkedList<ListCacheItem> _cacheList = CustomLinkedList<ListCacheItem>();
+
+  ListCacheItem get firstCacheItem => _cacheList.isEmpty ? null : _cacheList.first;
+  ListCacheItem get lastCacheItem => _cacheList.isEmpty ? null : _cacheList.last;
 
   ///上一个返回的item
   ListCacheItem _lastItem;
@@ -161,7 +164,7 @@ class ListDataCacheManager<T> {
     _isLoadingMoreNetworkData = true;
   }
 
-  ///晴空所有数据，包括数据库中数据
+  ///清空所有数据，包括数据库中数据
   void clear() {
     _itemMountCallBack?.close();
     _itemMountCallBack = ListItemMountCallBack(_checkIndex);
