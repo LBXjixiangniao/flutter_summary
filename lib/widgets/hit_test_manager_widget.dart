@@ -99,7 +99,7 @@ class _HitTestManagerRenderObject extends RenderProxyBox {
       _HitTestRenderObject hitTestRenderObject;
 
       void visit(RenderObject renderObject) {
-        assert(hitTestRenderObject == null); // this verifies that there's only one child
+        if(hitTestRenderObject != null) return;
         if (renderObject is _HitTestRenderObject)
           hitTestRenderObject = renderObject;
         else
