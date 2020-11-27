@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/list_data/model/list_model.dart';
-import 'package:flutter_summary/util/list_data_cache_manager.dart/default_list_cache_manager.dart';
-import 'package:flutter_summary/util/list_data_cache_manager.dart/list_data_cache_manager.dart';
 import 'package:flutter_summary/widgets/default_app_bar.dart';
 import 'package:flutter_summary/widgets/smart_refresher_footer_and_header.dart';
+import 'package:list_data_cache_manager/default_list_cache_manager.dart';
+import 'package:list_data_cache_manager/list_data_cache_manager.dart';
 import 'package:pull_to_refresh/pull_to_refresh.dart';
 
 const PageCount = 50;

@@ -11,12 +11,11 @@ class RouterManager {
   static RouterManager _routes = RouterManager._();
   List<String> _routesName = [];
 
-  List<String> get routesName => List.from(_routesName);
+  List<String> get routesNameList => List.from(_routesName);
 
   ///launch页
   static String root = "/";
   static get rootPageBuilder => (_) => DemoList();
-
 
   static String _routeNameForPageType(Type page) => page.toString();
 
@@ -42,11 +41,12 @@ class RouterManager {
       }
     } else {
       return MaterialPageRoute(
-          builder: (_) => Scaffold(
-                appBar: AppBar(
-                  title: Text('无指定页面'),
-                ),
-              ));
+        builder: (_) => Scaffold(
+          appBar: AppBar(
+            title: Text('无指定页面'),
+          ),
+        ),
+      );
     }
   }
 
