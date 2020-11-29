@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+/**
+ * 控制是否允许child接受点击事件，
+ * 如果checkHitTestPermission返回true则允许接受点击事件，
+ * 否则child不接受点击事件
+ */
 // ignore: must_be_immutable
 class HitTestCheckWidget extends SingleChildRenderObjectWidget {
   final bool Function(Offset) checkHitTestPermission;
@@ -21,18 +26,17 @@ class _HitTestCheckRenderObject extends RenderProxyBox {
   bool Function(Offset) checkHitTestPermission;
 
   @override
-  void handleEvent(PointerEvent event, covariant HitTestEntry entry) {
-    print('_HitTestCheckRenderObject$event');
-    super.handleEvent(event, entry);
-  }
-
-  @override
   bool hitTest(BoxHitTestResult result, {Offset position}) {
     if(checkHitTestPermission != null && checkHitTestPermission(position) == false)  return false;
     return super.hitTest(result, position: position);
   }
 }
 
+/**
+ * 控制是否拦截点击事件，如果checkHitTestAbsorb返回true则拦截点击事件，
+ * 效果和AbsorbPointer类似。
+ * 无论checkHitTestAbsorb返回什么，都不影响child接受点击事件
+ */
 class HitTestAbsorbCheckWidget extends SingleChildRenderObjectWidget {
   final bool Function(Offset) checkHitTestAbsorb;
   HitTestAbsorbCheckWidget({Key key, Widget child, this.checkHitTestAbsorb}) : super(key: key,child: child);
@@ -52,18 +56,18 @@ class _HitTestAbsorbCheckRenderObject extends RenderProxyBox {
   bool Function(Offset) checkHitTestAbsorb;
 
   @override
-  void handleEvent(PointerEvent event, covariant HitTestEntry entry) {
-    print('_HitTestAbsorbCheckRenderObject$event');
-    super.handleEvent(event, entry);
-  }
-
-  @override
   bool hitTest(BoxHitTestResult result, {Offset position}) {
     bool b = super.hitTest(result, position: position);
     return b || checkHitTestAbsorb?.call(position) == true;
   }
 }
 
+/**
+ * 控制是否忽略ignoreWidgetBuilder中创建的widget的点击事件
+ * 如果ignoreHitTest为true，则ignoreWidgetBuilder中穿件的widget不接受点击事件，
+ * 但是ignoreWidgetBuilder中的参数child（则hitTestWidget）还是正常接受点击事件。
+ * 如果ignoreHitTest不为true，则hitTest按正常逻辑传递。
+ */
 // ignore: must_be_immutable
 class HitTestIgnoreManagerWidget extends SingleChildRenderObjectWidget {
   final bool ignoreHitTest;

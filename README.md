@@ -10,6 +10,7 @@
         + abstract
         + extension
         + mixin
+        + class
     - styles
     - widgets
     - const
@@ -58,7 +59,7 @@
 >
 >**lib/util:**  放各种工具函数的文件夹
 
-## 集合类、字符串
+## Extension的使用
 ```
 extension IterableExtension<E> on Iterable<E> {
   bool get isNotNullAndEmpty {
@@ -92,7 +93,7 @@ extension StringExtension on String {
 
 经过实践，发现在mapEventToState方法中处理异步的state很麻烦。用await的话会阻塞mapEventToState方法，如果不await，后期通过其他event把state带到mapEventToState中又会导致多创建没什么实际意义的event。
 
-所以通过mixin给Bloc添加addState方法，让bloc可以跳过event直接传输state
+所以通过mixin给Bloc添加addState方法，让bloc可以跳过event直接传输state。但是addState方法的调用建议还是在mapEventToState方法的大括号内调用，这样子就可以很清晰的看出每一个even会触发哪些state。
 ```
 mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
   void addState(T nextState) {
@@ -119,64 +120,27 @@ mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
 
 ![](./read_me_image/bloc_usage.png)
 
-## 网络请求
-* #####  退出页面取消网络请求
-  如下，自定义dio网络请求的CancelToken，bloc和state改为可监听close和dispose的，如此可通过CustomCanceltoken监听bloc或state的close或dispose，从而取消网络请求
-
+## 退出页面取消网络请求
+* 自定义Bloc `DisposeNotifierBloc`，通过`bloc.addDisposeListener(VoidCallback listener)`可以监听到bloc的close事件
+* 自定义State `DisposeNotifierState`，通过`state.addDisposeListener(VoidCallback listener)`可以监听到bloc的close事件
+* 自定义`CancelToken`，将作DisposeNotifierBloc或者DisposeNotifierState为`disposeNotifier`参数用来创建CustomCanceltoken，则当bloc close或者state dispose的时候就会调用CustomCanceltoken的cancel方法取消网络请求
 ```
-  class CustomCanceltoken extends CancelToken {
-  final DisposeListenable listenableDispose;
+class CustomCanceltoken extends CancelToken {
+  final DisposeNotifier disposeNotifier;
   VoidCallback _disposeListener;
-  CustomCanceltoken({this.listenableDispose}) {
-    if (listenableDispose != null) {
-      _disposeListener = (() {
-        cancel();
-        listenableDispose.removeListener(_disposeListener);
-      });
-      listenableDispose.addDisposeListener(_disposeListener);
-      whenCancel.then((onValue) {
-        listenableDispose.removeListener(_disposeListener);
-      });
+  CustomCanceltoken({this.disposeNotifier}) {
+    if (disposeNotifier != null) {
+      _disposeListener = () {
+        super.cancel();
+      };
+      disposeNotifier.addDisposeListener(_disposeListener);
     }
   }
-
-  bool _isCompleted = false;
-  bool get isCompleted => _isCompleted || isCancelled;
-  ///封装的dio网络请求完成后调用此方法删除监听
-  void close() {
-    _isCompleted = true;
-    listenableDispose.removeListener(_disposeListener);
-  }
-}
-
-```
-
-```
-abstract class BlocCloseNotificationsAbstract<E, T> extends Bloc<E, T> with DisposeListenable {
-  BlocCloseNotificationsAbstract(T initialState) : super(initialState);
-  @override
-  Future<void> close() {
-    notifyListeners();
-    disposeDisposeListenable();
-    return super.close();
-  }
+  ...
 }
 ```
 
-```
-
-abstract class StateDisposeNotificationsAbstract<T extends StatefulWidget> extends State<T> with DisposeListenable {
-  @override
-  void dispose() {
-    notifyListeners();
-    disposeDisposeListenable();
-    super.dispose();
-  }
-}
-```
-
-
-* ##### 相关逻辑代码放一块
+## 相关逻辑代码放一块
   网络请求经常会涉及的是上下拉刷新、对网络请求结果弹框提示的逻辑。按bloc `event->state`的思路，在代码某处添加一个请求网络数据的event，然后在其他地方接收一个网络请求结果的state并处理弹框提示等；或者直接在bloc中就进行弹框提示等。
 
   但是这样子就将发起网络请求和对请求结果做弹框提示或者停止上下拉操作分割到两处了。个人感觉这样子代码逻辑不够清晰。
@@ -241,13 +205,13 @@ MaterialApp(
 ```
 * 跳转到页面A
 ```
-Navigator.of(context).push(Router.routeForPage(page:PageA(),),);
+Navigator.of(context).push(RouterManager.routeForPage(page:PageA(),),);
 ```
 
 * 跳转到页面A，同时传递Bloc
 ```
 Navigator.of(context, rootNavigator: true).push(
-      Router.routeForPage(
+      RouterManager.routeForPage(
           page: PageA(),
           pageWrapBuilder: (page, _) => BlocProvider(
                   create: (context) => bloc,
@@ -261,7 +225,7 @@ Navigator.of(context, rootNavigator: true).push(
 * 跳转到页面A，同时自定义Route
 ```
 Navigator.of(context, rootNavigator: true).push(
-      Router.routeForPage(
+      RouterManager.routeForPage(
           page: PageA(),
           customRouteBuilder: (pageBuilder, settings) => CustomRoute(
                 settings: settings,
@@ -271,9 +235,9 @@ Navigator.of(context, rootNavigator: true).push(
 );
 ```
 
-* 返回页面A
+* 返回到页面A
 ```
-Navigator.popUntil(context, Router.filterRoute(Router.pageA));
+Navigator.popUntil(context, RouterManager.filterRoute(Router.pageA));
 ```
 * 判断页面A是否在路由最顶层，也就是正在显示页面A
 ```
@@ -393,3 +357,40 @@ abstract class SliverGridDelegate {
   bool shouldRelayout(covariant SliverGridDelegate oldDelegate);
 }
 ```
+## 自定义点击事件处理
+
+以下三个类都是通过自定义hitTest方法实现的，需要其他的点击事件处理类可以通过自定义hitTest方法实现
+
+* HitTestCheckWidget：控制是否允许child接受点击事件，如果checkHitTestPermission返回true则允许接受点击事件，否则child不接受点击事件
+* HitTestAbsorbCheckWidget：控制是否拦截点击事件，如果checkHitTestAbsorb返回true则拦截点击事件，效果和AbsorbPointer类似。无论checkHitTestAbsorb返回什么，都不影响child接受点击事件
+* HitTestIgnoreManagerWidget: 控制是否忽略ignoreWidgetBuilder中创建的widget的点击事件。如果ignoreHitTest为true，则ignoreWidgetBuilder中创建的widget不接受点击事件，但是ignoreWidgetBuilder中的参数child（则hitTestWidget）还是正常接受点击事件。如果ignoreHitTest不为true，则hitTest按正常逻辑传递。
+
+如下例子，黄色块不会接受点击事件，红色块可以正常接受点击事件
+```
+HitTestIgnoreManagerWidget(
+              ignoreHitTest: true,
+              ignoreWidgetBuilder: (child) => GestureDetector(
+                onTap: () {
+                  print('tap one');
+                },
+                child: Container(
+                  color: Colors.yellow,
+                  width: 300,
+                  height: 200,
+                  alignment: Alignment.center,
+                  child: child,
+                ),
+              ),
+              hitestChild: GestureDetector(
+                onTap: () {
+                  print('tap two');
+                },
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.red,
+                ),
+              ),
+            ),
+```
+

@@ -1,6 +1,7 @@
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_summary/dart_class/mixin/dispose_notifier.dart';
 import '../../dart_class/abstract/listenable_dispose.dart';
 import 'package:flutter_summary/util/util.dart';
 
@@ -18,27 +19,31 @@ class NetworkResponse<R> {
 }
 
 class CustomCanceltoken extends CancelToken {
-  final ListenableDispose listenableDispose;
-  DisposeListener _disposeListener;
-  CustomCanceltoken({this.listenableDispose}) {
-    if (listenableDispose != null) {
-      _disposeListener = DisposeListener(() {
-        cancel();
-        _disposeListener.cancel();
-      });
-      listenableDispose.addDisposeListener(_disposeListener);
-      whenCancel.then((onValue) {
-        _disposeListener?.cancel();
-      });
+  final DisposeNotifier disposeNotifier;
+  VoidCallback _disposeListener;
+  CustomCanceltoken({this.disposeNotifier}) {
+    if (disposeNotifier != null) {
+      _disposeListener = () {
+        super.cancel();
+      };
+      disposeNotifier.addDisposeListener(_disposeListener);
     }
   }
 
   bool _isCompleted = false;
   bool get isCompleted => _isCompleted || isCancelled;
 
-  void close() {
+  void _close() {
     _isCompleted = true;
-    _disposeListener?.cancel();
+    disposeNotifier?.removeDisposeListener(_disposeListener);
+  }
+
+  @override
+  void cancel([reason]) {
+    if(_disposeListener != null && disposeNotifier != null) {
+      disposeNotifier.removeDisposeListener(_disposeListener);
+    }
+    super.cancel(reason);
   }
 }
 
@@ -172,7 +177,7 @@ class NetworkDio {
       queryParameters: method == 'GET' ? body : null,
     )
         .whenComplete(() {
-      cancelToken?.close();
+      cancelToken?._close();
     }).then((response) async {
       DioError responseError() {
         return DioError(
@@ -197,8 +202,7 @@ class NetworkDio {
       }
 
       ///处理数据
-      dynamic requiredData =
-          requiredDataPath is List<String> ? Util.mapValueForPath(response.data, requiredDataPath) : response.data;
+      dynamic requiredData = requiredDataPath is List<String> ? Util.mapValueForPath(response.data, requiredDataPath) : response.data;
 
       ///加M == R是为了防止R是dynamic的时候List<M>() is R恒为true
       bool requiredDataIsList = M == R ? false : List<M>() is R;

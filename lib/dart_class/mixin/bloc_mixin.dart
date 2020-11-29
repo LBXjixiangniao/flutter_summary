@@ -1,5 +1,5 @@
 import 'package:bloc/bloc.dart';
-import '../abstract/listenable_dispose.dart';
+
 
 mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
   void addState(T nextState) {
@@ -17,11 +17,9 @@ mixin BlocAddStateMixin<E, T> on Bloc<E, T> {
       onError(error, stackTrace);
     }
   }
-}
 
-mixin DisposeNotifierBloc<E,T> on Bloc<E,T>, ListenableDispose {
+  @override
   Future<void> close() {
-    notifyDisposeListeners();
     return super.close();
   }
 }
