@@ -246,6 +246,7 @@ RouterManager.isPageAtTop(context，[PageA页面对应的widget或者state对象
 
 
 ## ListView等列表数据缓存管理
+https://github.com/LBXjixiangniao/list_data_cache_manager
 ### 目的
 * 列表数据量很多（几千或者过万）的时候进行本地数据缓存管理，以减少内存占有量。
 * 实现列表数据的预加载
