@@ -192,7 +192,7 @@ bloc.add(NetworkEvent(
 ### 为了达到的目的：
 * 使用`popUntil`等和路由名称相关的方法
 * 判断当前widget或者state是否是App正在显示的页面 
-* 新接手项目的成员可以快速找到相关页面
+* 判断上一个页面是哪个页面，或者获取整个路由路径
 
 >不使用 `Navigator.pushNamed(context, 'routeName',arguments:arguemntsOjbect);`和`onGenerateRoute`组合的原因是：`pushNamed`传参麻烦；没有参数类型提示；且通过`pushName`跳转页面的话不能通过代码直接跳到相应页面（如通过`pushName`跳转到A页面，那在`pushName`代码处不能通过点击A类名跳转到A类代码处）。
 
@@ -241,7 +241,7 @@ Navigator.popUntil(context, RouterManager.filterRoute(Router.pageA));
 ```
 * 判断页面A是否在路由最顶层，也就是正在显示页面A
 ```
-Router.isPageAtTop(context，[PageA页面对应的widget或者state对象])
+RouterManager.isPageAtTop(context，[PageA页面对应的widget或者state对象])
 ```
 
 
