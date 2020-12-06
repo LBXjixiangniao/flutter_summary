@@ -69,13 +69,16 @@ class _WidgetLoadingBuilderState extends State<WidgetLoadingBuilder> {
           child: widget.child,
         ),
         if (widget.loading)
-          widget.loadingbuilder == null
-              ? CircleDotsLoadingWidget(
-                  // color: ColorHelper.ThemeColor,
-                  color: Colors.yellow,
-                  size: 24,
-                )
-              : widget.loadingbuilder(context),
+          RepaintBoundary(
+            child:
+             widget.loadingbuilder == null
+                ? CircleDotsLoadingWidget(
+                    // color: ColorHelper.ThemeColor,
+                    color: Colors.yellow,
+                    size: 24,
+                  )
+                : widget.loadingbuilder(context),
+          ),
       ],
     );
   }
