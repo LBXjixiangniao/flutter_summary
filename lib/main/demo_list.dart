@@ -8,6 +8,7 @@ import 'hit_test/hit_test_manager.dart';
 import 'list_data/list_data_page.dart';
 import 'order_task_manager/order_task_page.dart';
 import 'parentdata_widget/parent_data_widget_demo.dart';
+import 'repaint_boundary/repaint_boundary.dart';
 import 'widget_loading/widget_loading_page.dart';
 
 class DemoList extends StatelessWidget {
@@ -53,6 +54,11 @@ class DemoList extends StatelessWidget {
           title: 'hitTest',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: HitTestManager()));
+          }),
+      ItemInfo(
+          title: 'RepaintBoundary验证',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: RepaintBoundaryPage()));
           }),
     ];
     return Scaffold(

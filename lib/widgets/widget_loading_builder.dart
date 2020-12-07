@@ -70,8 +70,7 @@ class _WidgetLoadingBuilderState extends State<WidgetLoadingBuilder> {
         ),
         if (widget.loading)
           RepaintBoundary(
-            child:
-             widget.loadingbuilder == null
+            child: widget.loadingbuilder == null
                 ? CircleDotsLoadingWidget(
                     // color: ColorHelper.ThemeColor,
                     color: Colors.yellow,
