@@ -1,3 +1,5 @@
+import 'dart:html';
+
 import 'package:flutter/material.dart';
 
 typedef _Predicate<T> = bool Function(T value);
@@ -87,183 +89,160 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
       }
 
       add(root ?? _root);
+      _rebalanceForInsert(node);
     }
   }
 
-  ///node刚通过_insert方法插入的节点
-  void _rebalanceForInsert(Node node) {
-    Node parentOfUnbalancedSubtree;
-    Node rootAfterRotate;
-    for (Node nodeParent = node.parent; nodeParent != null; nodeParent = node.parent) {
-      // 往上遍历，可能到_root
-      // 节点的平衡因子factor需要被更新
-      if (node == nodeParent.right) {
-        // 增加节点的是右子树
-        if (nodeParent.factor > 0) {
-          // nodeParent右重
-          // nodeParent的临时平衡因子是 +2
-          // 需要重新平衡
-          parentOfUnbalancedSubtree = nodeParent.parent; // Save parent of nodeParent around rotations
-          if (node.factor < 0) // Right Left Case ，右左情况
-            rootAfterRotate = rotateRightLeft(nodeParent, node); // Double rotation: Right(node) then Left(nodeParent)
-          else // Right Right Case，右右情况
-            rootAfterRotate = rotateLeft(nodeParent, node); // Single rotation Left(nodeParent)
+  ///Z刚通过_insert方法插入的节点
+  void _rebalanceForInsert(Node Z) {
+    Node G;
+    Node N;
+    for (Node X = Z.parent; X != null; X = Z.parent) {
+      // Loop (possibly up to the root)
+      // BalanceFactor(X) has to be updated:
+      if (Z == X.right) {
+        // The right subtree increases
+        if (X.factor > 0) {
+          // X is right-heavy
+          // ===> the temporary BalanceFactor(X) == +2
+          // ===> rebalancing is required.
+          G = X.parent; // Save parent of X around rotations
+          if (Z.factor < 0) // Right Left Case     (see figure 5)
+            N = rotateRightLeft(X, Z); // Double rotation: Right(Z) then Left(X)
+          else // Right Right Case    (see figure 4)
+            N = rotateLeft(X, Z); // Single rotation Left(X)
           // After rotation adapt parent link
         } else {
-          if (nodeParent.factor < 0) {
-            nodeParent.factor = 0; // node’s height increase is absorbed at nodeParent.
+          if (X.factor < 0) {
+            X.factor = 0; // Z’s height increase is absorbed at X.
             break; // Leave the loop
           }
-          nodeParent.factor = 1;
-          node = nodeParent; // Height(node) increases by 1，node高度增加了 1
+          X.factor = 1;
+          Z = X; // Height(Z) increases by 1
           continue;
         }
       } else {
-        // 增加节点的是左子树
-        if (nodeParent.factor < 0) {
-          // nodeParent左重
-          // nodeParent的临时平衡因子是 +2
-          // 需要重新平衡
-          parentOfUnbalancedSubtree = nodeParent.parent; // Save parent of nodeParent around rotations
-          if (node.factor > 0) // Left Right Case，左右情况
-            rootAfterRotate = rotateLeftRight(nodeParent, node); // Double rotation: Left(node) then Right(nodeParent)
-          else // Left Left Case，左左情况
-            rootAfterRotate = rotateRight(nodeParent, node); // Single rotation Right(nodeParent)
+        // Z == left_child(X): the left subtree increases
+        if (X.factor < 0) {
+          // X is left-heavy
+          // ===> the temporary BalanceFactor(X) == –2
+          // ===> rebalancing is required.
+          G = X.parent; // Save parent of X around rotations
+          if (Z.factor > 0) // Left Right Case
+            N = rotateLeftRight(X, Z); // Double rotation: Left(Z) then Right(X)
+          else // Left Left Case
+            N = rotateRight(X, Z); // Single rotation Right(X)
           // After rotation adapt parent link
         } else {
-          if (nodeParent.factor > 0) {
-            nodeParent.factor = 0; // node’s height increase is absorbed at nodeParent.
+          if (X.factor > 0) {
+            X.factor = 0; // Z’s height increase is absorbed at X.
             break; // Leave the loop
           }
-          nodeParent.factor = -1;
-          node = nodeParent; // Height(node) increases by 1，node高度增加了 1
+          X.factor = -1;
+          Z = X; // Height(Z) increases by 1
           continue;
         }
       }
-      // 给旋转以后的子树的根结点重新设置父节点
-      // Height does not change: Height(rootAfterRotate) == old Height(nodeParent)
-      rootAfterRotate.parent = parentOfUnbalancedSubtree;
-      if (parentOfUnbalancedSubtree != null) {
-        if (nodeParent == parentOfUnbalancedSubtree.left)
-          parentOfUnbalancedSubtree.left = rootAfterRotate;
+      // After a rotation adapt parent link:
+      // N is the new root of the rotated subtree
+      // Height does not change: Height(N) == old Height(X)
+      N.parent = G;
+      if (G != null) {
+        if (X == G.left)
+          G.left = N;
         else
-          parentOfUnbalancedSubtree.right = rootAfterRotate;
+          G.right = N;
       } else
-        _root = rootAfterRotate; // N is the new root of the total tree
+        _root = N; // N is the new root of the total tree
       break;
       // There is no fall thru, only break; or continue;
     }
 // Unless loop is left via break, the height of the total tree increases by 1.
   }
 
-  ///单次左旋，对应于右右情况
-  /**
-   *    X
-   *   /  \
-   * t1     Z
-   *       /  \
-   *      t23  t4
-   * 
-   *        Z
-   *      /   \
-   *     X     t4
-   *   /  \   
-   * t1   t23
-   *       
-   */
-  Node rotateLeft(Node X, Node Z) {
-    // Z is by 2 higher than its sibling
-    Node t23 = Z.left; // Inner child of Z
-    X.right = t23;
-    if (t23 != null) t23.parent = X;
-    Z.left = X;
-    X.parent = Z;
-    // 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
-    if (Z.factor == 0) {
-      // t23 has been of same height as t4
-      X.factor = 1; // t23 now higher
-      Z.factor = -1; // t4 now lower than X
-    } else {
-      // 2nd case happens with insertion or deletion:
-      X.factor = 0;
-      Z.factor = 0;
-    }
-    return Z; // return new root of rotated subtree
-  }
-
-  ///对应于右左情况的旋转
-  /**
-   *    X
-   *   /  \
-   * t1     Z
-   *       /  \
-   *      Y    t4
-   *     /  \
-   *    t2   t3
-   * 
-   *     X
-   *   /  \
-   * t1     Y
-   *       /  \
-   *      t2   Z
-   *          /  \
-   *         t3   t4
-   * 
-   *        Y
-   *      /   \
-   *     X     Z
-   *   /  \   /  \
-   * t1   t2 t3   t4
-   *       
-   */
-  Node rotateRightLeft(Node X, Node Z) {
-    // Z is by 2 higher than its sibling
-    Node Y = Z.left; // Inner child of Z
-    // Y is by 1 higher than sibling
-    Node t3 = Y.right;
-    Z.left = t3;
-    if (t3 != null)
-        t3.parent = Z;
-    Y.right = Z;
-    Z.parent = Y;
-    
-    Node t2 = Y.left;
-    X.right = t2;
-    if (t2 != null)
-        t2.parent = X;
-    Y.left = X;
-    X.parent = Y;
-    if (Y.factor > 0) { // t3 was higher
-        X.factor = -1;  // t1 now higher
-        Z.factor = 0;
-    } else
-        if (Y.factor == 0) {
-            X.factor = 0;
-            Z.factor = 0;
-        } else {
-            // t2 was higher
-            X.factor = 0;
-            Z.factor = 1;  // t4 now higher
-        }
-    Y.factor = 0;
-    return Y; // return new root of rotated subtree
-}
-
   ///插入
   ///key: 需要删除的节点的key值
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找key删除node
   Node _delete(K key, {Node root}) {
-    ///用newNode代替oldNode在oldNode.parent中的位置
+    ///用newNode代替oldNode在oldNode.parent中的位置,_delete方法中只有此处才可能导致子树高度减一
+    ///所以在此方法中判断是否需要重新平衡即可
     void replaceNodeInParent(Node oldNode, Node newNode) {
       if (oldNode == null) return;
+
       if (oldNode.parent?.left == oldNode) {
         oldNode.parent.left = newNode;
       } else if (oldNode.parent?.right == oldNode) {
         oldNode.parent.right = newNode;
       }
-      oldNode.left = null;
-      oldNode.right = null;
-      oldNode.parent = null;
+
+      ///进行平衡
+      if (newNode != null) {
+        newNode.parent = oldNode.parent;
+        if (newNode.parent.factor != 0) {
+          _rebalanceForDelete(newNode);
+        } else if (oldNode.parent?.left == oldNode) {
+          oldNode.parent.factor = 1;
+        } else if (oldNode.parent?.right == oldNode) {
+          oldNode.parent.factor = -1;
+        }
+      } else {
+        ///newNode == null
+        if (oldNode.parent?.left == oldNode) {
+          if (oldNode.parent.factor == 0) {
+            oldNode.parent.factor = 1;
+          } else if (oldNode.parent.factor == -1) {
+            oldNode.parent.factor = 0;
+            _rebalanceForDelete(oldNode.parent);
+          } else if (oldNode.parent.factor == 1) {
+            ///oldNode.parent暂时平衡因子是2
+            Node rightNode = oldNode.parent.right;
+            if (rightNode.factor == 0) {
+              //右右、右左处理都行，处理完之后oldNode.parent子树高度不变，不用再次平衡
+              //右右需要旋转次数少，所以此处当左左处理
+              rotateLeft(rightNode.parent, rightNode);
+            } else if (rightNode.factor == 1) {
+              ///右右情形
+              rotateLeft(rightNode.parent, rightNode);
+
+              ///oldNode.parent子树高度减1，需要重新平衡
+              _rebalanceForDelete(oldNode.parent);
+            } else if (rightNode.factor == -1) {
+              ///右左情形
+              rotateRightLeft(rightNode.parent, rightNode);
+
+              ///oldNode.parent子树高度减1，需要重新平衡
+              _rebalanceForDelete(oldNode.parent);
+            }
+          }
+        } else if (oldNode.parent?.right == oldNode) {
+          if (oldNode.parent.factor == 0) {
+            oldNode.parent.factor = -1;
+          } else if (oldNode.parent.factor == 1) {
+            oldNode.parent.factor = 0;
+            _rebalanceForDelete(oldNode.parent);
+          } else if (oldNode.parent.factor == -1) {
+            ///oldNode.parent暂时平衡因子是-2
+            Node leftNode = oldNode.parent.left;
+            if (leftNode.factor == 1) {
+              //左右、左左处理都行，处理完之后oldNode.parent子树高度不变，不用再次平衡
+              //左左需要旋转次数少，所以此处当左左处理
+              rotateRight(leftNode.parent, leftNode);
+            } else if (leftNode.factor == 1) {
+              ///左右情形
+              rotateLeftRight(leftNode.parent, leftNode);
+
+              ///oldNode.parent子树高度减1，需要重新平衡
+              _rebalanceForDelete(oldNode.parent);
+            } else if (leftNode.factor == -1) {
+              ///左左情形
+              rotateRight(leftNode.parent, leftNode);
+
+              ///oldNode.parent子树高度减1，需要重新平衡
+              _rebalanceForDelete(oldNode.parent);
+            }
+          }
+        }
+      }
     }
 
     if (_root == null)
@@ -295,8 +274,86 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
         }
       }
 
-      return remove(root ?? _root);
+      Node deletedNode = remove(root ?? _root);
+      if (deletedNode != null) {
+        deletedNode.left = null;
+        deletedNode.right = null;
+        deletedNode.parent = null;
+      }
+      return deletedNode;
     }
+  }
+
+  ///node为跟的子树高度降低了1，且N是已经已经平衡的AVL子树
+  void _rebalanceForDelete(Node N) {
+    Node G;
+    Node Z;
+    int b;
+    for (Node X = N.parent; X != null; X = G) {
+      // Loop (possibly up to the root)
+      G = X.parent; // Save parent of X around rotations
+      // BalanceFactor(X) has not yet been updated!
+      if (N == X.left) {
+        // the left subtree decreases
+        if (X.factor > 0) {
+          // X is right-heavy
+          // ===> the temporary BalanceFactor(X) == +2
+          // ===> rebalancing is required.
+          Z = X.right; // Sibling of N (higher by 2)
+          b = Z.factor;
+          if (b < 0) // Right Left Case     (see figure 5)
+            N = rotateRightLeft(X, Z); // Double rotation: Right(Z) then Left(X)
+          else // Right Right Case    (see figure 4)
+            N = rotateLeft(X, Z); // Single rotation Left(X)
+          // After rotation adapt parent link
+        } else {
+          if (X.factor == 0) {
+            X.factor = 1; // N’s height decrease is absorbed at X.
+            break; // Leave the loop
+          }
+          N = X;
+          N.factor = 0; // Height(N) decreases by 1
+          continue;
+        }
+      } else {
+        // (N == right_child(X)): The right subtree decreases
+        if (X.factor < 0) {
+          // X is left-heavy
+          // ===> the temporary BalanceFactor(X) == –2
+          // ===> rebalancing is required.
+          Z = X.left; // Sibling of N (higher by 2)
+          b = Z.factor;
+          if (b > 0) // Left Right Case
+            N = rotateLeftRight(X, Z); // Double rotation: Left(Z) then Right(X)
+          else // Left Left Case
+            N = rotateRight(X, Z); // Single rotation Right(X)
+          // After rotation adapt parent link
+        } else {
+          if (X.factor == 0) {
+            X.factor = -1; // N’s height decrease is absorbed at X.
+            break; // Leave the loop
+          }
+          N = X;
+          N.factor = 0; // Height(N) decreases by 1
+          continue;
+        }
+      }
+      // After a rotation adapt parent link:
+      // N is the new root of the rotated subtree
+      N.parent = G;
+      if (G != null) {
+        if (X == G.left)
+          G.left = N;
+        else
+          G.right = N;
+      } else
+        _root = N; // N is the new root of the total tree
+
+      if (b == 0) break; // Height does not change: Leave the loop
+
+      // Height(N) decreases by 1 (== old Height(X)-1)
+    }
+// If (b != 0) the height of the total tree decreases by 1.
   }
 
   ///用newNode代替oldNode，newNode的parent、left、right都是从oldNode来
@@ -340,6 +397,190 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
 
       return searchRecursively(root ?? _root);
     }
+  }
+
+  ///单次左旋，对应于右右情况
+  /**
+   *    X
+   *   /  \
+   * t1     Z
+   *       /  \
+   *      t23  t4
+   * 
+   *        Z
+   *      /   \
+   *     X     t4
+   *   /  \   
+   * t1   t23
+   *       
+   */
+  Node rotateLeft(Node X, Node Z) {
+    // Z is by 2 higher than its sibling
+    Node t23 = Z.left; // Inner child of Z
+    X.right = t23;
+    if (t23 != null) t23.parent = X;
+    Z.left = X;
+    X.parent = Z;
+    // 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
+    if (Z.factor == 0) {
+      // t23 has been of same height as t4
+      X.factor = 1; // t23 now higher
+      Z.factor = -1; // t4 now lower than X
+    } else {
+      // 2nd case happens with insertion or deletion:
+      X.factor = 0;
+      Z.factor = 0;
+    }
+    return Z; // return new root of rotated subtree
+  }
+
+  ///单次右旋，对应于左左情况
+  /**
+   *        X
+   *      /   \
+   *     Z     t4
+   *   /  \   
+   * t1   t23
+   * 
+   *    Z
+   *   /  \
+   * t1     X
+   *       /  \
+   *      t23  t4
+   *       
+   */
+  Node rotateRight(Node X, Node Z) {
+    // Z is by 2 higher than its sibling
+    Node t23 = Z.right; // Inner child of Z
+    X.left = t23;
+    if (t23 != null) t23.parent = X;
+    Z.right = X;
+    X.parent = Z;
+    // 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
+    if (Z.factor == 0) {
+      // t23 has been of same height as t4
+      X.factor = 1; // t23 now higher
+      Z.factor = -1; // t4 now lower than X
+    } else {
+      // 2nd case happens with insertion or deletion:
+      X.factor = 0;
+      Z.factor = 0;
+    }
+    return Z; // return new root of rotated subtree
+  }
+
+  ///对应于右左情况的旋转,Z的高度比t1高2。t1、t2、t3、t4中，（1）t2或者t3比其他三个高度小1，（2）所有等高。
+  /**
+   *    X
+   *   /  \
+   * t1     Z
+   *       /  \
+   *      Y    t4
+   *     /  \
+   *    t2   t3
+   * 
+   *     X
+   *   /  \
+   * t1     Y
+   *       /  \
+   *      t2   Z
+   *          /  \
+   *         t3   t4
+   * 
+   *        Y
+   *      /   \
+   *     X     Z
+   *   /  \   /  \
+   * t1   t2 t3   t4
+   *       
+   */
+  Node rotateRightLeft(Node X, Node Z) {
+    // Z is by 2 higher than its sibling
+    Node Y = Z.left; // Inner child of Z
+    // Y is by 1 higher than sibling
+    Node t3 = Y.right;
+    Z.left = t3;
+    if (t3 != null) t3.parent = Z;
+    Y.right = Z;
+    Z.parent = Y;
+
+    Node t2 = Y.left;
+    X.right = t2;
+    if (t2 != null) t2.parent = X;
+    Y.left = X;
+    X.parent = Y;
+    if (Y.factor > 0) {
+      // t3 was higher
+      X.factor = -1; // t1 now higher
+      Z.factor = 0;
+    } else if (Y.factor == 0) {
+      //t2、t3等高
+      X.factor = 0;
+      Z.factor = 0;
+    } else {
+      // t2 was higher
+      X.factor = 0;
+      Z.factor = 1; // t4 now higher
+    }
+    Y.factor = 0;
+    return Y; // return new root of rotated subtree
+  }
+
+  ///对应于左右情况的旋转，Z的高度比t4高2。t1、t2、t3、t4中，（1）t2或者t3比其他三个高度小1，（2）所有等高。
+  /**
+   *        X
+   *      /   \
+   *     Z     t4
+   *   /  \   
+   * t1    Y
+   *      /  \
+   *     t2   t3
+   * 
+   *       X
+   *      /  \
+   *     Y    t4
+   *    /  \
+   *   Z    t3
+   *  /  \
+   * t1   t2
+   * 
+   *        Y
+   *      /   \
+   *     Z     X
+   *   /  \   /  \
+   * t1   t2 t3   t4
+   *       
+   */
+  Node rotateLeftRight(Node X, Node Z) {
+    // Z is by 2 higher than its sibling
+    Node Y = Z.right; // Inner child of Z
+    // Y is by 1 higher than sibling
+    Node t2 = Y.left;
+    Z.right = t2;
+    if (t2 != null) t2.parent = Z;
+    Y.left = Z;
+    Z.parent = Y;
+
+    Node t3 = Y.right;
+    X.left = t3;
+    if (t3 != null) t3.parent = X;
+    Y.right = X;
+    X.parent = Y;
+    if (Y.factor > 0) {
+      // t3 was higher
+      X.factor = -1; // t1 now higher
+      Z.factor = 0;
+    } else if (Y.factor == 0) {
+      //t2、t3等高
+      X.factor = 0;
+      Z.factor = 0;
+    } else {
+      // t2 was higher
+      X.factor = 0;
+      Z.factor = 1; // t4 now higher
+    }
+    Y.factor = 0;
+    return Y; // return new root of rotated subtree
   }
 
   ///查找最小值
