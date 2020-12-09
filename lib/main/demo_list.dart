@@ -3,6 +3,7 @@ import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/router/router.dart';
 
+import 'avl_tree/avl_tree_debug.dart';
 import 'china_region_select/china_region_select.dart';
 import 'hit_test/hit_test_manager.dart';
 import 'list_data/list_data_page.dart';
@@ -59,6 +60,11 @@ class DemoList extends StatelessWidget {
           title: 'RepaintBoundary验证',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: RepaintBoundaryPage()));
+          }),
+      ItemInfo(
+          title: 'AVL树封装验证',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: AVLTreeDebugPage()));
           }),
     ];
     return Scaffold(
