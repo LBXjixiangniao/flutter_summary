@@ -1,46 +1,33 @@
 import 'dart:collection';
-import 'dart:math';
-
+import 'binary_tree.dart';
 import 'maps.dart';
 
 typedef _Predicate<T> = bool Function(T value);
 typedef _ReplaceCheck<T> = bool Function(T oldValue, T newValue);
 
-///用于记录node在树中位置，以便打印出树结构
-class _PrintNode extends Comparable<_PrintNode> {
-  final int x;
-  final int y;
-  final String key;
-
-  _PrintNode(this.x, this.y, this.key);
-
-  @override
-  int compareTo(_PrintNode other) {
-    int comp = this.y.compareTo(other.y);
-    if (comp != 0) {
-      return comp;
-    }
-    return this.x.compareTo(other.y);
-  }
-}
-
+/// AVL树节点
 /**
  * 二叉树节点的平衡因子A的被定义为高度差（右子树高度-左子树高度）
  * 如果二叉搜索树所有节点的平衡因子在{-1,0,1}范围内，则称为AVL树
  * 如果节点平衡因子 < 0，被称为“左重”；如果节点平衡因子 > 0，被称为“右重”；如果节点平衡因子 == 0， 有时简称为“平衡”
  */
-/// AVL树节点
-class _AVLTreeNode<K, Node extends _AVLTreeNode<K, Node>> {
-  final K key;
-
+class _AVLTreeNode<K, Node extends _AVLTreeNode<K, Node>> extends BinaryTreeNode<K, Node> {
   ///平衡因子，新节点没有子树，所以平衡因子为0
   int factor = 0;
+  _AVLTreeNode(K key) : super(key);
 
-  Node left;
-  Node right;
-  Node parent;
+  @override
+  int get height {
+    if (this == null) return 0;
+    if (factor > 0) {
+      return 1 + (right?.height ?? 0);
+    } else {
+      return 1 + (left?.height ?? 0);
+    }
+  }
 
-  _AVLTreeNode(this.key);
+  @override
+  String get debugString => '$key($factor)';
 }
 
 /// 基于AVL树实现的Set的节点
@@ -83,8 +70,9 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
   ///replaceIfExist：如果存在与node的key相等的节点，则通过replaceIfExist判断是否用node代替已有节点，
   ///如果replaceIfExist不为null且返回true则代替，否则不代替
   void _insert(Node node, {Node root, _ReplaceCheck<Node> replaceIfExist}) {
+    String searchPath = '';
     assert(() {
-      if (debug) print('Insert:**********************************\n');
+      if (debug) print('Insert:${node.key}**********************************\n');
       return true;
     }());
 
@@ -97,7 +85,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
 
       void add(Node parent) {
         assert(() {
-          if (debug) print('->${parent.key}');
+          if (debug) searchPath += '->${parent.key}';
           return true;
         }());
         comp = compare(node.key, parent.key);
@@ -111,6 +99,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
             add(parent.left);
           } else {
             parent.left = node;
+            node.parent = parent;
             _count++;
           }
         } else {
@@ -118,6 +107,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
             add(parent.right);
           } else {
             parent.right = node;
+            node.parent = parent;
             _count++;
           }
         }
@@ -128,6 +118,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     }
     _modificationCount++;
     assert(() {
+      if (debug) print(searchPath);
+      return true;
+    }());
+    assert(() {
       if (debug) _printTree();
       return true;
     }());
@@ -135,6 +129,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
 
   ///Z刚通过_insert方法插入的节点
   void _rebalanceForInsert(Node Z) {
+    assert(() {
+      if (debug) print('RebalanceForInsert:${Z.key.toString()}');
+      return true;
+    }());
     Node G;
     Node N;
     for (Node X = Z.parent; X != null; X = Z.parent) {
@@ -204,8 +202,9 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
   ///key: 需要删除的节点的key值
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找key删除node
   Node _delete(K key, {Node root}) {
+    String searchPath = '';
     assert(() {
-      if (debug) print('Delete:**********************************\n');
+      if (debug) print('Delete:$key**********************************\n');
       return true;
     }());
 
@@ -213,11 +212,9 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     ///所以在此方法中判断是否需要重新平衡即可
     void replaceNodeInParent(Node oldNode, Node newNode) {
       if (oldNode == null) return;
-
-      if (oldNode.parent?.left == oldNode) {
-        oldNode.parent.left = newNode;
-      } else if (oldNode.parent?.right == oldNode) {
-        oldNode.parent.right = newNode;
+      if (oldNode == _root) {
+        _root = newNode;
+        return;
       }
 
       ///进行平衡
@@ -231,69 +228,19 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
           oldNode.parent.factor = -1;
         }
       } else {
-        ///newNode == null
-        if (oldNode.parent?.left == oldNode) {
-          if (oldNode.parent.factor == 0) {
-            oldNode.parent.factor = 1;
-          } else if (oldNode.parent.factor == -1) {
-            oldNode.parent.factor = 0;
-            _rebalanceForDelete(oldNode.parent);
-          } else if (oldNode.parent.factor == 1) {
-            ///oldNode.parent暂时平衡因子是2
-            Node rightNode = oldNode.parent.right;
-            if (rightNode.factor == 0) {
-              //右右、右左处理都行，处理完之后oldNode.parent子树高度不变，不用再次平衡
-              //右右需要旋转次数少，所以此处当左左处理
-              _rotateLeft(rightNode.parent, rightNode);
-            } else if (rightNode.factor == 1) {
-              ///右右情形
-              _rotateLeft(rightNode.parent, rightNode);
+        ///先不删除oldNode，将其认为是树高度减1用于做平衡先，
+        ///平衡完了再删除oldNode
+        _rebalanceForDelete(oldNode);
+      }
 
-              ///oldNode.parent子树高度减1，需要重新平衡
-              _rebalanceForDelete(oldNode.parent);
-            } else if (rightNode.factor == -1) {
-              ///右左情形
-              _rotateRightLeft(rightNode.parent, rightNode);
-
-              ///oldNode.parent子树高度减1，需要重新平衡
-              _rebalanceForDelete(oldNode.parent);
-            }
-          }
-        } else if (oldNode.parent?.right == oldNode) {
-          if (oldNode.parent.factor == 0) {
-            oldNode.parent.factor = -1;
-          } else if (oldNode.parent.factor == 1) {
-            oldNode.parent.factor = 0;
-            _rebalanceForDelete(oldNode.parent);
-          } else if (oldNode.parent.factor == -1) {
-            ///oldNode.parent暂时平衡因子是-2
-            Node leftNode = oldNode.parent.left;
-            if (leftNode.factor == 1) {
-              //左右、左左处理都行，处理完之后oldNode.parent子树高度不变，不用再次平衡
-              //左左需要旋转次数少，所以此处当左左处理
-              _rotateRight(leftNode.parent, leftNode);
-            } else if (leftNode.factor == 1) {
-              ///左右情形
-              _rotateLeftRight(leftNode.parent, leftNode);
-
-              ///oldNode.parent子树高度减1，需要重新平衡
-              _rebalanceForDelete(oldNode.parent);
-            } else if (leftNode.factor == -1) {
-              ///左左情形
-              _rotateRight(leftNode.parent, leftNode);
-
-              ///oldNode.parent子树高度减1，需要重新平衡
-              _rebalanceForDelete(oldNode.parent);
-            }
-          }
-        }
+      ///删除oldNode
+      if (oldNode.parent?.left == oldNode) {
+        oldNode.parent.left = newNode;
+      } else if (oldNode.parent?.right == oldNode) {
+        oldNode.parent.right = newNode;
       }
       _count--;
       _modificationCount++;
-      assert(() {
-        if (debug) _printTree();
-        return true;
-      }());
     }
 
     if (_root == null || key == null)
@@ -305,7 +252,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
       Node remove(Node parent) {
         if (parent == null) return null;
         assert(() {
-          if (debug) print('->${parent.key}');
+          if (debug) searchPath += '->${parent.key}';
           return true;
         }());
         comp = compare(key, parent.key);
@@ -335,12 +282,24 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
         deletedNode.right = null;
         deletedNode.parent = null;
       }
+      assert(() {
+        if (debug) print(searchPath);
+        return true;
+      }());
+      assert(() {
+        if (debug) _printTree();
+        return true;
+      }());
       return deletedNode;
     }
   }
 
   ///node为跟的子树高度降低了1，且N是已经已经平衡的AVL子树
   void _rebalanceForDelete(Node N) {
+    assert(() {
+      if (debug) print('RebalanceForDelete:${N.key.toString()}');
+      return true;
+    }());
     Node G;
     Node Z;
     int b;
@@ -413,6 +372,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
 
   ///用newNode代替oldNode，newNode的parent、left、right都是从oldNode来
   void _replaceNode(Node oldNode, Node newNode) {
+    assert(() {
+      if (debug) print('Replace ${oldNode.key.toString()} with ${newNode.key.toString()}\n');
+      return true;
+    }());
     if (oldNode == null) return;
     if (newNode != null) {
       newNode.left = oldNode.left;
@@ -425,6 +388,11 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     } else if (oldNode.parent?.right == oldNode) {
       oldNode.parent.right = newNode;
     }
+
+    if (oldNode == _root) {
+      _root = newNode;
+    }
+
     oldNode.left = null;
     oldNode.right = null;
     oldNode.parent = null;
@@ -433,6 +401,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
   ///查找node.key == key的node
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找
   Node _search(K key, {Node root}) {
+    String searchPath = '';
     assert(() {
       if (debug) print('Search:**********************************\n');
       return true;
@@ -446,7 +415,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
       Node searchRecursively(Node parent) {
         if (parent == null) return null;
         assert(() {
-          if (debug) print(parent.key);
+          if (debug) searchPath += '->${parent.key}';
           return true;
         }());
         if (initialModificationCount != _modificationCount) {
@@ -461,8 +430,12 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
           return searchRecursively(parent.right);
         }
       }
-
-      return searchRecursively(root ?? _root);
+      Node resultNode = searchRecursively(root ?? _root);
+      assert(() {
+        if (debug) print(searchPath);
+        return true;
+      }());
+      return resultNode;
     }
   }
 
@@ -482,6 +455,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
    *       
    */
   Node _rotateLeft(Node X, Node Z) {
+    assert(() {
+      if (debug) print('RotateLeft:${X.key.toString()},${Z.key.toString()}\n');
+      return true;
+    }());
     // Z is by 2 higher than its sibling
     Node t23 = Z.left; // Inner child of Z
     X.right = t23;
@@ -517,6 +494,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
    *       
    */
   Node _rotateRight(Node X, Node Z) {
+    assert(() {
+      if (debug) print('RotateRight:${X.key.toString()},${Z.key.toString()}\n');
+      return true;
+    }());
     // Z is by 2 higher than its sibling
     Node t23 = Z.right; // Inner child of Z
     X.left = t23;
@@ -526,8 +507,8 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     // 1st case, BalanceFactor(Z) == 0, only happens with deletion, not insertion:
     if (Z.factor == 0) {
       // t23 has been of same height as t4
-      X.factor = 1; // t23 now higher
-      Z.factor = -1; // t4 now lower than X
+      X.factor = -1; // t23 now higher
+      Z.factor = 1; // t4 now lower than X
     } else {
       // 2nd case happens with insertion or deletion:
       X.factor = 0;
@@ -562,6 +543,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
    *       
    */
   Node _rotateRightLeft(Node X, Node Z) {
+    assert(() {
+      if (debug) print('RotateRightLeft:${X.key.toString()},${Z.key.toString()}\n');
+      return true;
+    }());
     // Z is by 2 higher than its sibling
     Node Y = Z.left; // Inner child of Z
     // Y is by 1 higher than sibling
@@ -576,6 +561,8 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     if (t2 != null) t2.parent = X;
     Y.left = X;
     X.parent = Y;
+
+    ///修正平衡因子
     if (Y.factor > 0) {
       // t3 was higher
       X.factor = -1; // t1 now higher
@@ -619,6 +606,10 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
    *       
    */
   Node _rotateLeftRight(Node X, Node Z) {
+    assert(() {
+      if (debug) print('RotateLeftRight:${X.key.toString()},${Z.key.toString()}\n');
+      return true;
+    }());
     // Z is by 2 higher than its sibling
     Node Y = Z.right; // Inner child of Z
     // Y is by 1 higher than sibling
@@ -633,18 +624,20 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     if (t3 != null) t3.parent = X;
     Y.right = X;
     X.parent = Y;
+
+    ///修正平衡因子
     if (Y.factor > 0) {
       // t3 was higher
-      X.factor = -1; // t1 now higher
-      Z.factor = 0;
+      Z.factor = -1; // t1 now higher
+      X.factor = 0;
     } else if (Y.factor == 0) {
       //t2、t3等高
       X.factor = 0;
       Z.factor = 0;
     } else {
       // t2 was higher
-      X.factor = 0;
-      Z.factor = 1; // t4 now higher
+      Z.factor = 0;
+      X.factor = 1; // t4 now higher
     }
     Y.factor = 0;
     return Y; // return new root of rotated subtree
@@ -744,43 +737,16 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     _modificationCount++;
   }
 
-  void printTree() => _printTree();
+  void debugPrint(){
+    assert((){
+      _printTree();
+      return true;
+    }());
+  }
 
   ///打印整个树结构
   void _printTree() {
-    List<_PrintNode> nodeList = [];
-    int minX = 0;
-    void traversal(Node root, int x, int y) {
-      if (root == null) return;
-      String strKey = root.key.toString();
-      nodeList.add(_PrintNode(x, y, strKey));
-      if (root.left != null) {
-        nodeList.add(_PrintNode(x - 1, y + 1, '/'));
-      }
-      if (root.right != null) {
-        nodeList.add(_PrintNode(x + strKey.length, y + 1, '\\'));
-      }
-      traversal(root.left, x - 2, y + 2);
-      traversal(root.right, x + 2 + strKey.length, y + 2);
-      minX = min(x, minX);
-    }
-
-    traversal(_root, 0, 0);
-    nodeList.sort((a, b) => a.compareTo(b));
-    String str = '';
-    int currentY = 0;
-    int currentX = minX;
-    nodeList.forEach((element) {
-      if (currentY != element.y) {
-        str += '\n';
-        currentY = element.y;
-        currentX = minX;
-      }
-      List.generate(element.x - currentX, (index) => str += ' ');
-      str += element.key;
-      currentX = element.x;
-    });
-    print(str);
+    BinaryTreePrinter.printTree(_root);
   }
 }
 
