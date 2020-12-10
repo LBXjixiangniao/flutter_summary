@@ -27,7 +27,16 @@ class _AVLTreeNode<K, Node extends _AVLTreeNode<K, Node>> extends BinaryTreeNode
   }
 
   @override
-  String get debugString => '$key($factor)';
+  // String get debugString => '$key($factor)';
+  String get debugString {
+    if (factor > 0) {
+      return '$key+';
+    } else if (factor < 0) {
+      return '$key-';
+    } else {
+      return key.toString();
+    }
+  }
 }
 
 /// 基于AVL树实现的Set的节点
@@ -430,6 +439,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
           return searchRecursively(parent.right);
         }
       }
+
       Node resultNode = searchRecursively(root ?? _root);
       assert(() {
         if (debug) print(searchPath);
@@ -737,8 +747,12 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     _modificationCount++;
   }
 
-  void debugPrint(){
-    assert((){
+  String treeStructureString() {
+    return BinaryTreePrinter.treeStructureString(_root);
+  }
+
+  void debugPrint() {
+    assert(() {
       _printTree();
       return true;
     }());
