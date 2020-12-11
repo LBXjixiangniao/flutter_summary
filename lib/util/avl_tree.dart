@@ -79,6 +79,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
   ///replaceIfExist：如果存在与node的key相等的节点，则通过replaceIfExist判断是否用node代替已有节点，
   ///如果replaceIfExist不为null且返回true则代替，否则不代替
   void _insert(Node node, {Node root, _ReplaceCheck<Node> replaceIfExist}) {
+    if(node == null) return;
     String searchPath = '';
     assert(() {
       if (debug) print('Insert:${node.key}**********************************\n');
@@ -207,7 +208,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
 // Unless loop is left via break, the height of the total tree increases by 1.
   }
 
-  ///插入
+  ///删除
   ///key: 需要删除的节点的key值
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找key删除node
   Node _delete(K key, {Node root}) {
@@ -388,8 +389,12 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
     if (oldNode == null) return;
     if (newNode != null) {
       newNode.left = oldNode.left;
+      newNode.left?.parent = newNode;
       newNode.right = oldNode.right;
+      newNode.right?.parent = newNode;
       newNode.parent = oldNode.parent;
+
+      newNode.factor = oldNode.factor;
     }
 
     if (oldNode.parent?.left == oldNode) {

@@ -3,9 +3,9 @@ import 'binary_tree.dart';
 import 'maps.dart';
 
 typedef _Predicate<T> = bool Function(T value);
-typedef __replaceCheck<T> = bool Function(T oldValue, T newValue);
+typedef _ReplaceCheck<T> = bool Function(T oldValue, T newValue);
 
-enum NodeColor { Black, Red }
+enum _NodeColor { Black, Red }
 
 /// RedBlack树节点
 /**
@@ -15,25 +15,27 @@ enum NodeColor { Black, Red }
  */
 class _RedBlackTreeNode<K, Node extends _RedBlackTreeNode<K, Node>> extends BinaryTreeNode<K, Node> {
   ///平衡因子，新节点没有子树，所以平衡因子为0
-  NodeColor color;
+  _NodeColor color;
   _RedBlackTreeNode(K key) : super(key);
 
   Node get grandparent => parent?.parent;
+
   ///兄弟姊妹
   Node get sibling {
-    if(parent == null) return null;
-    if(this == parent.left) {
+    if (parent == null) return null;
+    if (this == parent.left) {
       return parent.right;
     }
     return parent.left;
   }
+
   Node get uncle => parent?.sibling;
 
   @override
   String get debugString {
-    if (color == NodeColor.Black) {
+    if (color == _NodeColor.Black) {
       return '${key}b';
-    } else if (color == NodeColor.Red) {
+    } else if (color == _NodeColor.Red) {
       return '${key}r';
     } else {
       return key.toString();
@@ -75,268 +77,437 @@ abstract class _RedBlackTree<K, Node extends _RedBlackTreeNode<K, Node>> {
   ///调试模式下增、删后会打印出整个RedBlack树，且搜索的时候会打印出查找路径
   bool debug = false;
 
+  ///单次左旋
+  /**
+   *  p
+   *   \
+   *    n
+   *   /  \
+   * t1     nnew
+   *       /  \
+   *      t2  t3
+   *     
+   *     p
+   *      \
+   *       nnew
+   *      /   \
+   *     n     t3
+   *   /  \   
+   * t1   t2
+   *       
+   */
   void _rotateLeft(Node n) {
-  Node nnew = n.right;
-  Node p = n.parent;
-  assert(nnew != null);  // Since the leaves of a red-black tree are empty,
-                            // they cannot become internal nodes.
-  n.right = nnew.left;
-  nnew.left = n;
-  n.parent = nnew;
-  // Handle other child/parent pointers.
-  if (n.right != null) {
-    n.right.parent = n;
-  }
-
-  // Initially n could be the root.
-  if (p != null) {
-    if (n == p.left) {
-      p.left = nnew;
-    } else if (n == p.right) {
-      p.right = nnew;
+    if (n == null || n.right == null) return;
+    Node nnew = n.right;
+    Node p = n.parent;
+    assert(nnew != null); // Since the leaves of a red-black tree are empty,
+    // they cannot become internal nodes.
+    n.right = nnew.left;
+    nnew.left = n;
+    n.parent = nnew;
+    // Handle other child/parent pointers.
+    if (n.right != null) {
+      n.right.parent = n;
     }
-  }
-  nnew.parent = p;
-}
 
-void _rotateRight(Node n) {
-  Node nnew = n.left;
-  Node p = n.parent;
-  assert(nnew != null);  // Since the leaves of a red-black tree are empty,
-                            // they cannot become internal nodes.
-
-  n.left = nnew.right;
-  nnew.right = n;
-  n.parent = nnew;
-
-  // Handle other child/parent pointers.
-  if (n.left != null) {
-    n.left.parent = n;
-  }
-
-  // Initially n could be the root.
-  if (p != null) {
-    if (n == p.left) {
-      p.left = nnew;
-    } else if (n == p.right) {
-      p.right = nnew;
-    }
-  }
-  nnew.parent = p;
-}
-
-Node _insert(Node root, Node n) {
-  // Insert new Node into the current tree.
-  _insertRecurse(root, n);
-
-  // Repair the tree in case any of the red-black properties have been violated.
-  _insertRepairTree(n);
-
-  // Find the new root to return.
-  root = n;
-  while (root?.parent != null) {
-    root = root.parent;
-  }
-  return root;
-}
-
-void _insertRecurse(Node root, Node n) {
-  // Recursively descend the tree until a leaf is found.
-  if (root != null)
-  {
-    int com = _compare(n.key,root.key);
-    if (com < 0) {
-      if (root.left != null) {
-        _insertRecurse(root.left, n);
-        return;
-      } else {
-        root.left = n;
-      }
-    } else { // n.key >= root.key
-      if (root.right != null) {
-        _insertRecurse(root.right, n);
-        return;
-      } else {
-        root.right = n;
+    // Initially n could be the root.
+    if (p != null) {
+      if (n == p.left) {
+        p.left = nnew;
+      } else if (n == p.right) {
+        p.right = nnew;
       }
     }
+    nnew.parent = p;
   }
 
-  // Insert new Node n.
-  n.parent = root;
-  n.left = null;
-  n.right = null;
-  n.color = NodeColor.Red;
-}
+  ///单次右旋
+  /**
+   * 
+   *      p
+   *       \
+   *        n
+   *      /   \
+   *     nnew  t3
+   *   /  \   
+   * t1   t2
+   * 
+   *   p
+   *    \
+   *    nnew
+   *   /   \
+   * t1     n
+   *       /  \
+   *      t2  t3
+   *       
+   */
+  void _rotateRight(Node n) {
+    if (n == null || n.left == null) return;
+    Node nnew = n.left;
+    Node p = n.parent;
+    assert(nnew != null); // Since the leaves of a red-black tree are empty,
+    // they cannot become internal nodes.
 
-void _insertRepairTree(Node n) {
-  if (n?.parent == null) {
-    _insertCase1(n);
-  } else if (n?.parent?.color == NodeColor.Black) {
-    _insertCase2(n);
-  } else if (n?.uncle != null && n?.uncle?.color == NodeColor.Red) {
-    _insertCase3(n);
-  } else {
-    _insertCase4(n);
+    n.left = nnew.right;
+    nnew.right = n;
+    n.parent = nnew;
+
+    // Handle other child/parent pointers.
+    if (n.left != null) {
+      n.left.parent = n;
+    }
+
+    // Initially n could be the root.
+    if (p != null) {
+      if (n == p.left) {
+        p.left = nnew;
+      } else if (n == p.right) {
+        p.right = nnew;
+      }
+    }
+    nnew.parent = p;
   }
-}
 
-void _insertCase1(Node n) {
-  n?.color = NodeColor.Black;
-}
+  void _insert(Node n, {Node root, _ReplaceCheck<Node> replaceIfExist}) {
+    if (n == null) return;
+    // Insert new Node into the current tree.
+    bool add = true;
+    _insertRecurse(
+      n,
+      root: root,
+      replaceIfExist: (oldValue, newValue) {
+        add = false;
+        return replaceIfExist?.call(oldValue, newValue) ?? false;
+      },
+    );
 
-void _insertCase2(Node n) {
-  // Do nothing since tree is still valid.
-  return;
-}
+    if (add) {
+      // Repair the tree in case any of the red-black properties have been violated.
+      _insertRepairTree(n);
 
-void _insertCase3(Node n) {
-  n?.parent?.color = NodeColor.Black;
-  n?.uncle?.color = NodeColor.Black;
-  n?.grandparent?.color = NodeColor.Red;
-  _insertRepairTree(n?.grandparent);
-}
-
-void _insertCase4(Node n) {
-  Node p = n?.parent;
-  Node g = n?.grandparent;
-
-  if (n == p?.right && p == g?.left) {
-    _rotateLeft(p);
-    n = n?.left;
-  } else if (n == p?.left && p == g?.right) {
-    _rotateRight(p);
-    n = n?.right;
+      // Find the new root to return.
+      root = n;
+      while (root?.parent != null) {
+        root = root.parent;
+      }
+      _root = root;
+    }
   }
 
-  _insertCase4Step2(n);
-}
+  void _insertRecurse(Node n, {Node root, _ReplaceCheck<Node> replaceIfExist}) {
+    assert(n != null);
+    // Recursively descend the tree until a leaf is found.
+    if (root != null) {
+      int com = _compare(n.key, root.key);
+      if (com == 0) {
+        if (replaceIfExist?.call(root, n) == true) {
+          ///用node替换parent
+          _replaceNode(root, n);
+          return;
+        }
+      } else if (com < 0) {
+        if (root.left != null) {
+          _insertRecurse(n, root: root.left, replaceIfExist: replaceIfExist);
+          return;
+        } else {
+          root.left = n;
+        }
+      } else {
+        // n.key >= root.key
+        if (root.right != null) {
+          _insertRecurse(n, root: root.right, replaceIfExist: replaceIfExist);
+          return;
+        } else {
+          root.right = n;
+        }
+      }
+    }
 
-void _insertCase4Step2(Node n) {
-  Node p = n?.parent;
-  Node g = n?.grandparent;
-
-  if (n == p?.left) {
-    _rotateRight(g);
-  } else {
-    _rotateLeft(g);
+    // Insert new Node n.
+    n.parent = root;
+    n.left = null;
+    n.right = null;
+    n.color = _NodeColor.Red;
   }
-  p?.color = NodeColor.Black;
-  g?.color = NodeColor.Red;
-}
+
+  void _insertRepairTree(Node n) {
+    if(n == null) return;
+    if (n.parent == null) {
+      _insertCase1(n);
+    } else if (n.parent.color == _NodeColor.Black) {
+      _insertCase2(n);
+    } else if (n.uncle != null && n.uncle.color == _NodeColor.Red) {
+      _insertCase3(n);
+    } else {
+      _insertCase4(n);
+    }
+  }
+
+  ///n是_root，要设置为黑色
+  void _insertCase1(Node n) {
+    assert(n != null);
+    n.color = _NodeColor.Black;
+  }
+
+  void _insertCase2(Node n) {
+    // Do nothing since tree is still valid.
+    return;
+  }
+
+  ///n的parent和uncle都是红色
+  void _insertCase3(Node n) {
+    assert(n != null);
+    n.parent.color = _NodeColor.Black;
+    n.uncle.color = _NodeColor.Black;
+    n.grandparent?.color = _NodeColor.Red;
+    _insertRepairTree(n.grandparent);
+  }
+
+  ///n是红色，n的parent是红色，n的uncle是黑色
+  void _insertCase4(Node n) {
+    assert(n != null);
+    Node p = n.parent;
+    Node g = n.grandparent;
+
+    if (n == p?.right && p == g?.left) {
+      _rotateLeft(p);
+      n = n.left;
+    } else if (n == p?.left && p == g?.right) {
+      _rotateRight(p);
+      n = n.right;
+    }
+
+    _insertCase4Step2(n);
+  }
+
+  void _insertCase4Step2(Node n) {
+    assert(n != null);
+    Node p = n.parent;
+    Node g = n.grandparent;
+
+    if (n == p?.left) {
+      _rotateRight(g);
+    } else {
+      _rotateLeft(g);
+    }
+    p?.color = _NodeColor.Black;
+    g?.color = _NodeColor.Red;
+  }
+
+  ///删除
+  ///key: 需要删除的节点的key值
+  ///root：指定查找的根结点，如果root不为null，则会从root开始查找key删除node
+  Node _delete(K key, {Node root}) {
+    String searchPath = '';
+    assert(() {
+      if (debug) print('Delete:$key**********************************\n');
+      return true;
+    }());
+
+    if (_root == null || key == null)
+      return null;
+    else {
+      var compare = _compare;
+      int comp;
+
+      Node remove(Node parent) {
+        if (parent == null) return null;
+        assert(() {
+          if (debug) searchPath += '->${parent.key}';
+          return true;
+        }());
+        comp = compare(key, parent.key);
+        if (comp == 0) {
+          if (parent.left != null && parent.right != null) {
+            Node min = _findMin(root: parent.right);
+            _deleteOneChild(min);
+            _replaceNode(parent, min);
+          } else {
+            _deleteOneChild(parent);
+          }
+          return parent;
+        } else if (comp < 0) {
+          return remove(parent.left);
+        } else {
+          return remove(parent.right);
+        }
+      }
+
+      Node deletedNode = remove(root ?? _root);
+      if (deletedNode != null) {
+        deletedNode.left = null;
+        deletedNode.right = null;
+        deletedNode.parent = null;
+      }
+      assert(() {
+        if (debug) print(searchPath);
+        return true;
+      }());
+      assert(() {
+        if (debug) _printTree();
+        return true;
+      }());
+      return deletedNode;
+    }
+  }
 
   ///用newNode代替oldNode，newNode的parent、left、right都是从oldNode来
-  void _replaceNode(Node n, Node child) {
-  child?.parent = n?.parent;
-  if (n == n?.parent?.left) {
-    n?.parent?.left = child;
-  } else {
-    n?.parent?.right = child;
+  void _replaceNode(Node oldNode, Node newNode) {
+    assert(() {
+      if (debug) print('Replace ${oldNode.key.toString()} with ${newNode.key.toString()}\n');
+      return true;
+    }());
+    if (oldNode == null) return;
+    if (newNode != null) {
+      newNode.left = oldNode.left;
+      newNode.left?.parent = newNode;
+      newNode.right = oldNode.right;
+      newNode.right?.parent = newNode;
+      newNode.parent = oldNode.parent;
+
+      newNode.color = oldNode.color;
+    }
+
+    if (oldNode.parent?.left == oldNode) {
+      oldNode.parent.left = newNode;
+    } else if (oldNode.parent?.right == oldNode) {
+      oldNode.parent.right = newNode;
+    }
+
+    if (oldNode == _root) {
+      _root = newNode;
+    }
+
+    oldNode.left = null;
+    oldNode.right = null;
+    oldNode.parent = null;
   }
-}
 
-void _deleteOneChild(Node n) {
-  // Precondition: n has at most one non-leaf child.
-  Node child = (n?.right == null) ? n?.left : n?.right;
-  assert(child != null);
-
-  _replaceNode(n, child);
-  if (n?.color == NodeColor.Black) {
-    if (child?.color == NodeColor.Red) {
-      child?.color = NodeColor.Black;
+  ///child是n的子节点，child没有兄弟姐妹
+  ///用child代替n在n.parent中的位置
+  void _replaceNodeInParent(Node n, Node child) {
+    if(n == null) return null;
+    if (n == _root) {
+      _root = child;
+      _root.color = _NodeColor.Black;
+      return;
+    }
+    child?.parent = n.parent;
+    if (n == n.parent?.left) {
+      n.parent?.left = child;
     } else {
-      _deleteCase1(child);
+      n.parent?.right = child;
     }
   }
-  // free(n);
-}
 
-void _deleteCase1(Node n) {
-  if (n?.parent != null) {
-    _deleteCase2(n);
+  //删除最多只有一个子节点的节点
+   void _deleteOneChild(Node n) {
+    // Precondition: n has at most one non-leaf child.
+    Node child = (n.right == null) ? n.left : n.right;
+    assert(child != null);
+
+    _replaceNodeInParent(n, child);
+    if (n.color == _NodeColor.Black) {
+      if (child?.color == _NodeColor.Red) {
+        child.color = _NodeColor.Black;
+      } else {
+        _deleteCase1(child);
+      }
+    }
+    n.parent = null;
+    n.left = null;
+    n.right = null;
   }
-}
 
-void _deleteCase2(Node n) {
-  Node s = n?.sibling;
+  void _deleteCase1(Node n) {
+    if (n?.parent != null) {
+      _deleteCase2(n);
+    }
+  }
 
-  if (s?.color == NodeColor.Red) {
-    n?.parent?.color = NodeColor.Red;
-    s?.color = NodeColor.Black;
+  void _deleteCase2(Node n) {
+    Node s = n.sibling;
+
+    if (s?.color == _NodeColor.Red) {
+      n?.parent?.color = _NodeColor.Red;
+      s?.color = _NodeColor.Black;
+      if (n == n?.parent?.left) {
+        _rotateLeft(n?.parent);
+      } else {
+        _rotateRight(n?.parent);
+      }
+    }
+    _deleteCase3(n);
+  }
+
+  void _deleteCase3(Node n) {
+    Node s = n?.sibling;
+
+    if ((n?.parent?.color == _NodeColor.Black) &&
+        (s?.color == _NodeColor.Black) &&
+        (s?.left?.color == _NodeColor.Black) &&
+        (s?.right?.color == _NodeColor.Black)) {
+      s?.color = _NodeColor.Red;
+      _deleteCase1(n?.parent);
+    } else {
+      _deleteCase4(n);
+    }
+  }
+
+  void _deleteCase4(Node n) {
+    Node s = n?.sibling;
+
+    if ((n?.parent?.color == _NodeColor.Red) &&
+        (s?.color == _NodeColor.Black) &&
+        (s?.left?.color == _NodeColor.Black) &&
+        (s?.right?.color == _NodeColor.Black)) {
+      s?.color = _NodeColor.Red;
+      n?.parent?.color = _NodeColor.Black;
+    } else {
+      _deleteCase5(n);
+    }
+  }
+
+  void _deleteCase5(Node n) {
+    Node s = n?.sibling;
+
+    // This if statement is trivial, due to case 2 (even though case 2 changed
+    // the sibling to a sibling's child, the sibling's child can't be red, since
+    // no red parent can have a red child).
+    if (s?.color == _NodeColor.Black) {
+      // The following statements just force the red to be on the left of the
+      // left of the parent, or right of the right, so case six will rotate
+      // correctly.
+      if ((n == n?.parent?.left) && (s?.right?.color == _NodeColor.Black) && (s?.left?.color == _NodeColor.Red)) {
+        // This last test is trivial too due to cases 2-4.
+        s?.color = _NodeColor.Red;
+        s?.left?.color = _NodeColor.Black;
+        _rotateRight(s);
+      } else if ((n == n?.parent?.right) && (s?.left?.color == _NodeColor.Black) && (s?.right?.color == _NodeColor.Red)) {
+        // This last test is trivial too due to cases 2-4.
+        s?.color = _NodeColor.Red;
+        s?.right?.color = _NodeColor.Black;
+        _rotateLeft(s);
+      }
+    }
+    _deleteCase6(n);
+  }
+
+  void _deleteCase6(Node n) {
+    Node s = n?.sibling;
+
+    s?.color = n?.parent?.color;
+    n?.parent?.color = _NodeColor.Black;
+
     if (n == n?.parent?.left) {
+      s?.right?.color = _NodeColor.Black;
       _rotateLeft(n?.parent);
     } else {
+      s?.left?.color = _NodeColor.Black;
       _rotateRight(n?.parent);
     }
   }
-  _deleteCase3(n);
-}
 
-void _deleteCase3(Node n) {
-  Node s = n?.sibling;
-
-  if ((n?.parent?.color == NodeColor.Black) && (s?.color == NodeColor.Black) &&
-      (s?.left?.color == NodeColor.Black) && (s?.right?.color == NodeColor.Black)) {
-    s?.color = NodeColor.Red;
-    _deleteCase1(n?.parent);
-  } else {
-    _deleteCase4(n);
-  }
-}
-
-void _deleteCase4(Node n) {
-  Node s = n?.sibling;
-
-  if ((n?.parent?.color == NodeColor.Red) && (s?.color == NodeColor.Black) &&
-      (s?.left?.color == NodeColor.Black) && (s?.right?.color == NodeColor.Black)) {
-    s?.color = NodeColor.Red;
-    n?.parent?.color = NodeColor.Black;
-  } else {
-    _deleteCase5(n);
-  }
-}
-
-void _deleteCase5(Node n) {
-  Node s = n?.sibling;
-
-  // This if statement is trivial, due to case 2 (even though case 2 changed
-  // the sibling to a sibling's child, the sibling's child can't be red, since
-  // no red parent can have a red child).
-  if (s?.color == NodeColor.Black) {
-    // The following statements just force the red to be on the left of the
-    // left of the parent, or right of the right, so case six will rotate
-    // correctly.
-    if ((n == n?.parent?.left) && (s?.right?.color == NodeColor.Black) &&
-        (s?.left?.color == NodeColor.Red)) {
-      // This last test is trivial too due to cases 2-4.
-      s?.color = NodeColor.Red;
-      s?.left?.color = NodeColor.Black;
-      _rotateRight(s);
-    } else if ((n == n?.parent?.right) && (s?.left?.color == NodeColor.Black) &&
-               (s?.right?.color == NodeColor.Red)) {
-      // This last test is trivial too due to cases 2-4.
-      s?.color = NodeColor.Red;
-      s?.right?.color = NodeColor.Black;
-      _rotateLeft(s);
-    }
-  }
-  _deleteCase6(n);
-}
-
-void _deleteCase6(Node n) {
-  Node s = n?.sibling;
-
-  s?.color = n?.parent?.color;
-  n?.parent?.color = NodeColor.Black;
-
-  if (n == n?.parent?.left) {
-    s?.right?.color = NodeColor.Black;
-    _rotateLeft(n?.parent);
-  } else {
-    s?.left?.color = NodeColor.Black;
-    _rotateRight(n?.parent);
-  }
-}
   ///查找node.key == key的node
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找
   Node _search(K key, {Node root}) {
@@ -378,8 +549,6 @@ void _deleteCase6(Node n) {
       return resultNode;
     }
   }
-
-  
 
   ///查找最小值
   ///root：指定查找的根结点，如果root不为null，则会从root开始查找
@@ -537,7 +706,8 @@ class RedBlackTreeMap<K, V> extends _RedBlackTree<K, _RedBlackTreeMapNode<K, V>>
   ///
   /// The keys must all be instances of [K] and the values of [V].
   /// The [other] map itself can have any type.
-  factory RedBlackTreeMap.from(Map<dynamic, dynamic> other, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory RedBlackTreeMap.from(Map<dynamic, dynamic> other,
+      [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     if (other is Map<K, V>) {
       return RedBlackTreeMap<K, V>.of(other, compare, isValidKey);
     }
@@ -549,7 +719,8 @@ class RedBlackTreeMap<K, V> extends _RedBlackTree<K, _RedBlackTreeMapNode<K, V>>
   }
 
   /// Creates a [RedBlackTreeMap] that contains all key/value pairs of [other].
-  factory RedBlackTreeMap.of(Map<K, V> other, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
+  factory RedBlackTreeMap.of(Map<K, V> other,
+          [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
       RedBlackTreeMap<K, V>(compare, isValidKey)..addAll(other);
 
   /// Creates a [RedBlackTreeMap] where the keys and values are computed from the
@@ -564,7 +735,10 @@ class RedBlackTreeMap<K, V> extends _RedBlackTree<K, _RedBlackTreeMapNode<K, V>>
   /// If no functions are specified for [key] and [value] the default is to
   /// use the iterable value itself.
   factory RedBlackTreeMap.fromIterable(Iterable iterable,
-      {K Function(dynamic element) key, V Function(dynamic element) value, int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey}) {
+      {K Function(dynamic element) key,
+      V Function(dynamic element) value,
+      int Function(K key1, K key2) compare,
+      bool Function(dynamic potentialKey) isValidKey}) {
     RedBlackTreeMap<K, V> map = RedBlackTreeMap<K, V>(compare, isValidKey);
     CustomMapBase.fillMapWithMappedIterable(map, iterable, key, value);
     return map;
@@ -579,7 +753,8 @@ class RedBlackTreeMap<K, V> extends _RedBlackTree<K, _RedBlackTreeMapNode<K, V>>
   /// overwrites the previous value.
   ///
   /// It is an error if the two [Iterable]s don't have the same length.
-  factory RedBlackTreeMap.fromIterables(Iterable<K> keys, Iterable<V> values, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory RedBlackTreeMap.fromIterables(Iterable<K> keys, Iterable<V> values,
+      [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     RedBlackTreeMap<K, V> map = RedBlackTreeMap<K, V>(compare, isValidKey);
     CustomMapBase.fillMapWithIterables(map, keys, values);
     return map;
@@ -803,7 +978,8 @@ class _RedBlackTreeValueIterator<K, V> extends _RedBlackTreeIterator<K, _RedBlac
   V _getValue(_RedBlackTreeMapNode<K, V> node) => node.value;
 }
 
-class _RedBlackTreeNodeIterator<K, Node extends _RedBlackTreeNode<K, Node>> extends _RedBlackTreeIterator<K, Node, Node> {
+class _RedBlackTreeNodeIterator<K, Node extends _RedBlackTreeNode<K, Node>>
+    extends _RedBlackTreeIterator<K, Node, Node> {
   _RedBlackTreeNodeIterator(_RedBlackTree<K, Node> tree) : super(tree);
   Node _getValue(Node node) => node;
 }
@@ -867,7 +1043,8 @@ class RedBlackTreeSet<E> extends _RedBlackTree<E, _RedBlackTreeSetNode<E>> with 
   /// Set<SubType> subSet =
   ///     new RedBlackTreeSet<SubType>.from(superSet.whereType<SubType>());
   /// ```
-  factory RedBlackTreeSet.from(Iterable elements, [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory RedBlackTreeSet.from(Iterable elements,
+      [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     if (elements is Iterable<E>) {
       return RedBlackTreeSet<E>.of(elements, compare, isValidKey);
     }
@@ -883,7 +1060,8 @@ class RedBlackTreeSet<E> extends _RedBlackTree<E, _RedBlackTreeSetNode<E>> with 
   /// The set works as if created by `new RedBlackTreeSet<E>(compare, isValidKey)`.
   ///
   /// All the [elements] should be valid as arguments to the [compare] function.
-  factory RedBlackTreeSet.of(Iterable<E> elements, [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
+  factory RedBlackTreeSet.of(Iterable<E> elements,
+          [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
       RedBlackTreeSet(compare, isValidKey)..addAll(elements);
 
   Set<T> _newSet<T>() => RedBlackTreeSet<T>((T a, T b) => _compare(a as E, b as E), _validKey);
