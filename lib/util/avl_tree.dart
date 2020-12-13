@@ -16,6 +16,10 @@ class _AVLTreeNode<K, Node extends _AVLTreeNode<K, Node>> extends BinaryTreeNode
   int factor = 0;
   _AVLTreeNode(K key) : super(key);
 
+  _AVLTreeNode<K, Node> copy() {
+    return _AVLTreeNode<K, Node>(key);
+  }
+
   @override
   int get height {
     if (this == null) return 0;
@@ -42,6 +46,9 @@ class _AVLTreeNode<K, Node extends _AVLTreeNode<K, Node>> extends BinaryTreeNode
 /// 基于AVL树实现的Set的节点
 class _AVLTreeSetNode<K> extends _AVLTreeNode<K, _AVLTreeSetNode<K>> {
   _AVLTreeSetNode(K key) : super(key);
+  _AVLTreeSetNode<K> copy() {
+    return _AVLTreeSetNode<K>(key);
+  }
 }
 
 /// 基于AVL树实现的Map的节点
@@ -49,6 +56,16 @@ class _AVLTreeSetNode<K> extends _AVLTreeNode<K, _AVLTreeSetNode<K>> {
 class _AVLTreeMapNode<K, V> extends _AVLTreeNode<K, _AVLTreeMapNode<K, V>> {
   V value;
   _AVLTreeMapNode(K key, this.value) : super(key);
+
+  _AVLTreeMapNode<K, V> copy() {
+    return _AVLTreeMapNode<K, V>(key, value);
+  }
+
+  @override
+  void replaceWith(_AVLTreeMapNode<K, V> node) {
+    super.replaceWith(node);
+    value = node?.value;
+  }
 }
 
 /// AVL树实现
@@ -79,7 +96,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
   ///replaceIfExist：如果存在与node的key相等的节点，则通过replaceIfExist判断是否用node代替已有节点，
   ///如果replaceIfExist不为null且返回true则代替，否则不代替
   void _insert(Node node, {Node root, _ReplaceCheck<Node> replaceIfExist}) {
-    if(node == null) return;
+    if (node == null) return;
     String searchPath = '';
     assert(() {
       if (debug) print('Insert:${node.key}**********************************\n');
@@ -287,11 +304,6 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
       }
 
       Node deletedNode = remove(root ?? _root);
-      if (deletedNode != null) {
-        deletedNode.left = null;
-        deletedNode.right = null;
-        deletedNode.parent = null;
-      }
       assert(() {
         if (debug) print(searchPath);
         return true;
@@ -300,7 +312,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
         if (debug) _printTree();
         return true;
       }());
-      return deletedNode;
+      return deletedNode?.copy();
     }
   }
 
@@ -387,29 +399,7 @@ abstract class _AVLTree<K, Node extends _AVLTreeNode<K, Node>> {
       return true;
     }());
     if (oldNode == null) return;
-    if (newNode != null) {
-      newNode.left = oldNode.left;
-      newNode.left?.parent = newNode;
-      newNode.right = oldNode.right;
-      newNode.right?.parent = newNode;
-      newNode.parent = oldNode.parent;
-
-      newNode.factor = oldNode.factor;
-    }
-
-    if (oldNode.parent?.left == oldNode) {
-      oldNode.parent.left = newNode;
-    } else if (oldNode.parent?.right == oldNode) {
-      oldNode.parent.right = newNode;
-    }
-
-    if (oldNode == _root) {
-      _root = newNode;
-    }
-
-    oldNode.left = null;
-    oldNode.right = null;
-    oldNode.parent = null;
+    oldNode.replaceWith(newNode);
   }
 
   ///查找node.key == key的node
@@ -814,8 +804,7 @@ class AVLTreeMap<K, V> extends _AVLTree<K, _AVLTreeMapNode<K, V>> with MapMixin<
   ///
   /// The keys must all be instances of [K] and the values of [V].
   /// The [other] map itself can have any type.
-  factory AVLTreeMap.from(Map<dynamic, dynamic> other,
-      [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory AVLTreeMap.from(Map<dynamic, dynamic> other, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     if (other is Map<K, V>) {
       return AVLTreeMap<K, V>.of(other, compare, isValidKey);
     }
@@ -827,8 +816,7 @@ class AVLTreeMap<K, V> extends _AVLTree<K, _AVLTreeMapNode<K, V>> with MapMixin<
   }
 
   /// Creates a [AVLTreeMap] that contains all key/value pairs of [other].
-  factory AVLTreeMap.of(Map<K, V> other,
-          [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
+  factory AVLTreeMap.of(Map<K, V> other, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
       AVLTreeMap<K, V>(compare, isValidKey)..addAll(other);
 
   /// Creates a [AVLTreeMap] where the keys and values are computed from the
@@ -843,10 +831,7 @@ class AVLTreeMap<K, V> extends _AVLTree<K, _AVLTreeMapNode<K, V>> with MapMixin<
   /// If no functions are specified for [key] and [value] the default is to
   /// use the iterable value itself.
   factory AVLTreeMap.fromIterable(Iterable iterable,
-      {K Function(dynamic element) key,
-      V Function(dynamic element) value,
-      int Function(K key1, K key2) compare,
-      bool Function(dynamic potentialKey) isValidKey}) {
+      {K Function(dynamic element) key, V Function(dynamic element) value, int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey}) {
     AVLTreeMap<K, V> map = AVLTreeMap<K, V>(compare, isValidKey);
     CustomMapBase.fillMapWithMappedIterable(map, iterable, key, value);
     return map;
@@ -861,8 +846,7 @@ class AVLTreeMap<K, V> extends _AVLTree<K, _AVLTreeMapNode<K, V>> with MapMixin<
   /// overwrites the previous value.
   ///
   /// It is an error if the two [Iterable]s don't have the same length.
-  factory AVLTreeMap.fromIterables(Iterable<K> keys, Iterable<V> values,
-      [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory AVLTreeMap.fromIterables(Iterable<K> keys, Iterable<V> values, [int Function(K key1, K key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     AVLTreeMap<K, V> map = AVLTreeMap<K, V>(compare, isValidKey);
     CustomMapBase.fillMapWithIterables(map, keys, values);
     return map;
@@ -1150,8 +1134,7 @@ class AVLTreeSet<E> extends _AVLTree<E, _AVLTreeSetNode<E>> with IterableMixin<E
   /// Set<SubType> subSet =
   ///     new AVLTreeSet<SubType>.from(superSet.whereType<SubType>());
   /// ```
-  factory AVLTreeSet.from(Iterable elements,
-      [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
+  factory AVLTreeSet.from(Iterable elements, [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) {
     if (elements is Iterable<E>) {
       return AVLTreeSet<E>.of(elements, compare, isValidKey);
     }
@@ -1167,8 +1150,7 @@ class AVLTreeSet<E> extends _AVLTree<E, _AVLTreeSetNode<E>> with IterableMixin<E
   /// The set works as if created by `new AVLTreeSet<E>(compare, isValidKey)`.
   ///
   /// All the [elements] should be valid as arguments to the [compare] function.
-  factory AVLTreeSet.of(Iterable<E> elements,
-          [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
+  factory AVLTreeSet.of(Iterable<E> elements, [int Function(E key1, E key2) compare, bool Function(dynamic potentialKey) isValidKey]) =>
       AVLTreeSet(compare, isValidKey)..addAll(elements);
 
   Set<T> _newSet<T>() => AVLTreeSet<T>((T a, T b) => _compare(a as E, b as E), _validKey);

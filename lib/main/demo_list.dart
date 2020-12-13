@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart' hide Router;
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
+import 'package:flutter_summary/main/red_black_tree/red_black_tree.dart';
 import 'package:flutter_summary/router/router.dart';
 
 import 'avl_tree/avl_tree_debug.dart';
@@ -65,6 +66,11 @@ class DemoList extends StatelessWidget {
           title: 'AVL树封装验证',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: AVLTreeDebugPage()));
+          }),
+      ItemInfo(
+          title: '红黑树封装验证',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: RedBlackTreeDebugPage()));
           }),
     ];
     return Scaffold(

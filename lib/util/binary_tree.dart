@@ -23,13 +23,18 @@ class _PrintNode extends Comparable<_PrintNode> {
 
 ///二叉树节点
 class BinaryTreeNode<K, Node extends BinaryTreeNode<K, Node>> {
-  final K key;
+  K _key;
 
   Node left;
   Node right;
   Node parent;
 
-  BinaryTreeNode(this.key);
+  BinaryTreeNode(K key):_key = key;
+
+  K get key => _key;
+  void replaceWith(Node node) {
+    _key = node?.key;
+  }
 
   int get height {
     if (this == null) return 0;
