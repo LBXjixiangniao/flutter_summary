@@ -1,6 +1,5 @@
+import 'package:dart_tree/dart_tree.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_summary/util/avl_tree.dart';
-import 'package:flutter_summary/util/binary_tree.dart';
 
 class AVLTreeDebugPage extends StatefulWidget {
   @override
