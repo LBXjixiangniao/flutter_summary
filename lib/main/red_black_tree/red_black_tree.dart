@@ -66,7 +66,7 @@ class _RedBlackTreeDebugPageState extends State<RedBlackTreeDebugPage> {
           FlatButton(
             child: Text('打印树结构'),
             onPressed: () {
-              treeSet.debugPrint();
+              print(treeSet.treeStructureString());
             },
           ),
         ],
