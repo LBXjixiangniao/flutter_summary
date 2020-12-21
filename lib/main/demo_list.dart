@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Router;
+import 'package:flutter_summary/main/const_test/const_test.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/main/red_black_tree/red_black_tree.dart';
@@ -71,6 +72,11 @@ class DemoList extends StatelessWidget {
           title: '红黑树封装验证',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: RedBlackTreeDebugPage()));
+          }),
+      ItemInfo(
+          title: 'const修饰widget效果测试',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: ConstWidgetTest()));
           }),
     ];
     return Scaffold(
