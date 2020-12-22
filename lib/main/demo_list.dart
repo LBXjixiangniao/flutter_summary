@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart' hide Router;
+import 'package:flutter_boost/flutter_boost.dart';
 import 'package:flutter_summary/main/const_test/const_test.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
@@ -77,6 +78,13 @@ class DemoList extends StatelessWidget {
           title: 'const修饰widget效果测试',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: ConstWidgetTest()));
+          }),
+      ItemInfo(
+          title: 'flutter_boost测试',
+          tapAction: () {
+            FlutterBoost.singleton.open('FlutterBoostFirstPage').then((value) {
+              print(value);
+            });
           }),
     ];
     return Scaffold(
