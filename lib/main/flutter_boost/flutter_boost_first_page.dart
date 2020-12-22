@@ -5,6 +5,7 @@ class FlutterBoostFirstPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        automaticallyImplyLeading: true,
         title: Text('flutter'),
       ),
       body: Center(
