@@ -102,50 +102,96 @@ void showConfirmOrCancelAlert(
   Zone.current.scheduleMicrotask(() {
     showDialog(
       context: context,
-      barrierDismissible: false,
+      barrierDismissible: true,
       builder: (BuildContext context) {
-        // return DefaultAlertDialog(
-        //   title: (title is Widget || title == null) ? title : Text(title.toString()),
-        //   content: Material(
-        //     child: child,
-        //     color: Colors.transparent,
-        //   ),
-        //   actions: <Widget>[
-        //     CupertinoDialogAction(
-        //       child: Text(
-        //         cancelButtonTitle ?? '取消',
-        //         style: TextStyle(
-        //             decoration: TextDecoration.none,
-        //             fontFamily: PingFangType.regular,
-        //             color: ColorHelper.Black153,
-        //             fontSize: 16),
-        //       ),
-        //       onPressed: () {
-        //         autoDimissWhenCancel ? Navigator.pop(context) : null;
-        //         if (cancelCallback != null) {
-        //           cancelCallback();
-        //         }
-        //       },
-        //     ),
-        //     CupertinoDialogAction(
-        //       child: Text(
-        //         confirmButtonTitle ?? '确定',
-        //         style: TextStyle(
-        //             decoration: TextDecoration.none,
-        //             fontFamily: PingFangType.regular,
-        //             color: ColorHelper.ThemeColor,
-        //             fontSize: 16),
-        //       ),
-        //       onPressed: () {
-        //         if (confirmCallback != null) {
-        //           confirmCallback();
-        //         } else {
-        //           Navigator.pop(context);
-        //         }
-        //       },
-        //     ),
-        //   ],
-        // );
+        return LayoutBuilder(builder: (_, constraints) {
+          return AlertDialog(
+            buttonPadding: const EdgeInsets.all(0),
+            insetPadding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+            title: (title is Widget || title == null) ? title : Text(title.toString()),
+            content: Material(
+              child: child,
+              color: Colors.transparent,
+            ),
+            actions: <Widget>[
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(bottomLeft: Radius.circular(20)),
+                ),
+                child: GestureDetector(
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: constraints.maxWidth / 2 - 40,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        top: BorderSide(
+                          color: ColorHelper.DividerColor,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    height: 44,
+                    child: Text(
+                      cancelButtonTitle ?? '取消',
+                      style: TextStyle(
+                          decoration: TextDecoration.none,
+                          // fontFamily: PingFangType.regular,
+                          color: ColorHelper.Black153,
+                          fontSize: 16),
+                    ),
+                  ),
+                  onTap: () {
+                    autoDimissWhenCancel ? Navigator.pop(context) : null;
+                    if (cancelCallback != null) {
+                      cancelCallback();
+                    }
+                  },
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.only(bottomRight: Radius.circular(20)),
+                ),
+                child: GestureDetector(
+                  child: Container(
+                    alignment: Alignment.center,
+                    width: constraints.maxWidth / 2 - 40,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      border: Border(
+                        left: BorderSide(
+                          color: ColorHelper.DividerColor,
+                          width: 1,
+                        ),
+                        top: BorderSide(
+                          color: ColorHelper.DividerColor,
+                          width: 1,
+                        ),
+                      ),
+                    ),
+                    child: Text(
+                      confirmButtonTitle ?? '确定',
+                      style: TextStyle(
+                          decoration: TextDecoration.none,
+                          // fontFamily: PingFangType.regular,
+                          color: ColorHelper.ThemeColor,
+                          fontSize: 16),
+                    ),
+                  ),
+                  onTap: () {
+                    if (confirmCallback != null) {
+                      confirmCallback();
+                    } else {
+                      Navigator.pop(context);
+                    }
+                  },
+                ),
+              ),
+            ],
+          );
+        });
       },
     );
   });
