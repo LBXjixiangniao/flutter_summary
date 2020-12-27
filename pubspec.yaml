@@ -68,7 +68,7 @@ dependencies:
   #AVL树和红黑树
   dart_tree: ^0.0.3
   #跨平台开发框架
-  flutter_boost: ^1.17.1
+  # flutter_boost: ^1.17.1
 
 dev_dependencies:
   flutter_test:
