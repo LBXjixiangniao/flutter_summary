@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart' hide Router;
-import 'package:flutter_summary/main/action/action.dart';
 import 'package:flutter_summary/main/const_test/const_test.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/performance/performance_list.dart';
@@ -91,11 +90,6 @@ class DemoList extends StatelessWidget {
           title: '分组列表的下标管理',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: IndexManagerPage()));
-          }),
-      ItemInfo(
-          title: 'Action相关类使用',
-          tapAction: () {
-            Navigator.push(context, RouterManager.routeForPage(page: ActionPage()));
           }),
       ItemInfo(
           title: '性能相关',

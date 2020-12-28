@@ -15,26 +15,70 @@ class _IndexManagerPageState extends State<IndexManagerPage> {
         title: Text('分组列表的下标管理'),
       ),
       body: ListView.builder(
-        itemBuilder: (_, index) {
-
-        },
+        itemBuilder: (_, index) {},
         itemCount: 0,
       ),
     );
   }
 }
 
-class IndexManager {
-  SplayTreeSet<IndexManagerItem> _treeSet = SplayTreeSet<IndexManagerItem>((a,b){
+class GroupIndexManager {
+  SplayTreeMap<GroupKey, GroupInfo> _treeMap = SplayTreeMap<GroupKey, GroupInfo>((a, b) {
     return 0;
   });
 
+  void closeGroup(String groupId) {
+    assert(groupId != null);
+    GroupInfo info = _treeMap[GroupKey(groupId: groupId)];
+    info.isOpen = false;
+  }
 
+  void openGroup(String groupId) {
+    assert(groupId != null);
+    GroupInfo info = _treeMap[GroupKey(groupId: groupId)];
+    info.isOpen = true;
+  }
+
+  int indexOf(int index) {
+    assert(index != null);
+    GroupInfo info = _treeMap[GroupKey(startIndex: index)];
+    
+  }
+
+  bool add(String groupId, {RangeValues rage}) {
+
+  }
+
+  bool remove(String groupId, {RangeValues rage}) {
+    
+  }
 }
 
-class IndexManagerItem {
+class GroupInfo {
+  int dataStartIndex;
+  int length;
+  String groupId;
+  bool isOpen;
+}
+
+class GroupKey extends Comparable<GroupKey> {
   int startIndex;
-  // final int originStartIndex;
-  // final int originEndIndex;
-  // final CallbackAction a;
+  int dataStartIndex;
+  String groupId;
+  GroupKey({this.startIndex, this.dataStartIndex, this.groupId})
+      : assert(startIndex != null || dataStartIndex != null || groupId != null);
+
+  @override
+  int compareTo(other) {
+    if (startIndex != null && other.startIndex != null) {
+      return startIndex.compareTo(other.startIndex);
+    }
+    if (dataStartIndex != null && other.dataStartIndex != null) {
+      return dataStartIndex.compareTo(other.dataStartIndex);
+    }
+    if (groupId != null && other.groupId != null) {
+      return groupId.compareTo(other.groupId);
+    }
+    return 0;
+  }
 }
