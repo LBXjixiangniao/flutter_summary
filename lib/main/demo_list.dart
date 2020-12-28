@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart' hide Router;
-import 'package:flutter_boost/flutter_boost.dart';
+import 'package:flutter_summary/main/action/action.dart';
 import 'package:flutter_summary/main/const_test/const_test.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
 import 'package:flutter_summary/main/performance/performance_list.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/main/red_black_tree/red_black_tree.dart';
+import 'package:flutter_summary/main/stl_stf_widget/stl_stf_widget.dart';
 import 'package:flutter_summary/router/router.dart';
 
 import 'avl_tree/avl_tree_debug.dart';
 import 'china_region_select/china_region_select.dart';
 import 'hit_test/hit_test_manager.dart';
+import 'index_manager/index_manager.dart';
 import 'list_data/list_data_page.dart';
 import 'order_task_manager/order_task_page.dart';
 import 'parentdata_widget/parent_data_widget_demo.dart';
@@ -81,11 +83,19 @@ class DemoList extends StatelessWidget {
             Navigator.push(context, RouterManager.routeForPage(page: ConstWidgetTest()));
           }),
       ItemInfo(
-          title: 'flutter_boost测试',
+          title: 'stateless vs stateful widget',
           tapAction: () {
-            FlutterBoost.singleton.open('FlutterBoostFirstPage').then((value) {
-              print(value);
-            });
+            Navigator.push(context, RouterManager.routeForPage(page: StlVSStfWidget()));
+          }),
+      ItemInfo(
+          title: '分组列表的下标管理',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: IndexManagerPage()));
+          }),
+      ItemInfo(
+          title: 'Action相关类使用',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: ActionPage()));
           }),
       ItemInfo(
           title: '性能相关',

@@ -1,23 +1,14 @@
 import 'package:flutter/material.dart' hide Router;
-import 'package:flutter_boost/flutter_boost.dart';
-import 'package:flutter_summary/lifecycle/lifecycle.dart';
 import 'package:flutter_summary/router/router.dart';
 import 'package:flutter_summary/styles/pingfang_textstyle.dart';
 import 'package:oktoast/oktoast.dart';
 
+import 'lifecycle/lifecycle.dart';
 import 'main/demo_list.dart';
-import 'main/flutter_boost/flutter_boost_first_page.dart';
 import 'styles/color_helper.dart';
 
 void main() {
   runApp(MyApp());
-}
-
-void registerPageForFlutterBoost() {
-  FlutterBoost.singleton.registerPageBuilders(<String, PageBuilder>{
-    'FlutterBoostFirstPage': (String pageName, Map<String, dynamic> params, String _) => FlutterBoostFirstPage(),
-    '/': (String pageName, Map<String, dynamic> params, String _) => DemoList(),
-  });
 }
 
 class MyApp extends StatefulWidget {
@@ -26,14 +17,10 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    registerPageForFlutterBoost();
-  }
 
   @override
   Widget build(BuildContext context) {
+    
     return OKToast(
       child: MaterialApp(
         title: 'Flutter Demo',
@@ -76,7 +63,6 @@ class _MyAppState extends State<MyApp> {
             ),
             dividerColor: ColorHelper.DividerColor,
             scaffoldBackgroundColor: ColorHelper.BGColor),
-        builder: FlutterBoost.init(),
         home: DemoList(),
         // routes: {
         //   RouterManager.root: (ctx) {
