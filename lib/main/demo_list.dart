@@ -2,6 +2,7 @@ import 'package:flutter/material.dart' hide Router;
 import 'package:flutter_boost/flutter_boost.dart';
 import 'package:flutter_summary/main/const_test/const_test.dart';
 import 'package:flutter_summary/main/counter/counter.dart';
+import 'package:flutter_summary/main/performance/performance_list.dart';
 import 'package:flutter_summary/main/provider_counter/provider_counter.dart';
 import 'package:flutter_summary/main/red_black_tree/red_black_tree.dart';
 import 'package:flutter_summary/router/router.dart';
@@ -85,6 +86,11 @@ class DemoList extends StatelessWidget {
             FlutterBoost.singleton.open('FlutterBoostFirstPage').then((value) {
               print(value);
             });
+          }),
+      ItemInfo(
+          title: '性能相关',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: PerformanceListPage()));
           }),
     ];
     return Scaffold(

@@ -7,45 +7,6 @@ import 'package:flutter_summary/styles/color_helper.dart';
 import '../widget_loading_builder.dart';
 import 'dialog_route.dart';
 
-void showDefaultLoading({
-  @required BuildContext context,
-  String title,
-  bool barrierDismissible = false,
-}) {
-  showDialog(
-    context: context,
-    barrierDismissible: barrierDismissible,
-    child: Align(
-      alignment: Alignment.center,
-      child: Container(
-        height: 100,
-        width: 100,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            CircleDotsLoadingWidget(
-              size: 35,
-              color: ColorHelper.ThemeColor,
-            ),
-            SizedBox(height: 15),
-            Text(
-              title ?? '正在加载...',
-              style: Theme.of(context).textTheme.bodyText2.copyWith(
-                  color: ColorHelper.Black153,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
 void showSingleAlert({
   @required BuildContext context,
   dynamic title,
@@ -54,39 +15,64 @@ void showSingleAlert({
   VoidCallback callback,
   Color buttonTitleColor,
 }) {
-  // showDialog(
-  //   context: context,
-  //   barrierDismissible: false,
-  //   builder: (BuildContext context) {
-  //     return DefaultAlertDialog(
-  //       title: (title is Widget || title == null)
-  //           ? title
-  //           : Text(
-  //               title.toString(),
-  //             ),
-  //       content: child,
-  //       actions: <Widget>[
-  //         CupertinoDialogAction(
-  //           child: Text(
-  //             buttonTitle ?? '确定',
-  //             style: TextStyle(
-  //                 decoration: TextDecoration.none,
-  //                 fontFamily: PingFangType.regular,
-  //                 color: buttonTitleColor ?? ColorHelper.Black153,
-  //                 fontSize: 16),
-  //           ),
-  //           onPressed: () {
-  //             if (callback != null) {
-  //               callback();
-  //             } else {
-  //               Navigator.pop(context);
-  //             }
-  //           },
-  //         ),
-  //       ],
-  //     );
-  //   },
-  // );
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext context) {
+      return LayoutBuilder(builder: (_, constraints) {
+        return AlertDialog(
+          buttonPadding: const EdgeInsets.all(0),
+          insetPadding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
+          title: title != null
+              ? Center(
+                  child: title is Widget ? title : Text(title.toString()),
+                )
+              : null,
+          content: child,
+          actions: <Widget>[
+            GestureDetector(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    bottom: Radius.circular(8),
+                  ),
+                ),
+                child: Container(
+                  alignment: Alignment.center,
+                  width: constraints.maxWidth,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    border: Border(
+                      top: BorderSide(
+                        color: ColorHelper.DividerColor,
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    buttonTitle ?? '确定',
+                    style: TextStyle(
+                        decoration: TextDecoration.none,
+                        // fontFamily: PingFangType.regular,
+                        color: buttonTitleColor ?? ColorHelper.Black153,
+                        fontSize: 16),
+                  ),
+                ),
+              ),
+              onTap: () {
+                if (callback != null) {
+                  callback();
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+            ),
+          ],
+        );
+      });
+    },
+  );
 }
 
 //title可以是widget，如果不是widget，且不是null，则toString()转成字符串用Text显示，
@@ -102,13 +88,17 @@ void showConfirmOrCancelAlert(
   Zone.current.scheduleMicrotask(() {
     showDialog(
       context: context,
-      barrierDismissible: true,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return LayoutBuilder(builder: (_, constraints) {
           return AlertDialog(
             buttonPadding: const EdgeInsets.all(0),
             insetPadding: const EdgeInsets.symmetric(horizontal: 40.0, vertical: 24.0),
-            title: (title is Widget || title == null) ? title : Text(title.toString()),
+            title: title != null
+                ? Center(
+                    child: title is Widget ? title : Text(title.toString()),
+                  )
+                : null,
             content: Material(
               child: child,
               color: Colors.transparent,

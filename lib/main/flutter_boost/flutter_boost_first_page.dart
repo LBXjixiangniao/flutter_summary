@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_boost/flutter_boost.dart';
 
 class FlutterBoostFirstPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: true,
+        leading: IconButton(
+          onPressed: (){
+            FlutterBoost.singleton.close('FlutterBoostFirstPage');
+          },
+          icon: Icon(Icons.arrow_back_ios),
+        ),
         title: Text('flutter'),
       ),
       body: Center(
