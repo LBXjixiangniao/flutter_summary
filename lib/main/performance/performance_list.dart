@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_summary/main/performance/cur_alert_dialog/cupertino_alert_dialog.dart';
+import 'package:flutter_summary/main/performance/widgets/cupertino_alert_dialog.dart';
 import 'package:flutter_summary/router/router.dart';
+
+import 'widgets/delay_build_widget.dart';
 
 class ListTileInfo {
   final String title;
@@ -19,6 +21,12 @@ class PerformanceListPage extends StatelessWidget {
           subTitle: 'CupertinoAlertDialog会off screen layer,打开checkerboardOffscreenLayers调试会看到弹框有颜色',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: CupertinoAlertDialogTest()));
+          }),
+      ListTileInfo(
+          title: 'DelayBuildWidget',
+          subTitle: '延时构建小部件',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: DelayBuildWidgetTestPage()));
           }),
     ];
     return Scaffold(
