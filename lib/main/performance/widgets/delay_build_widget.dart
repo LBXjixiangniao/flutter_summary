@@ -1,11 +1,16 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_summary/styles/color_helper.dart';
+import 'package:flutter_summary/util/image_helper.dart';
 
 class GridInfo {
   final String url;
   final String title;
+  final String icon;
   final String subTitle;
 
-  GridInfo({@required this.url, @required this.title, @required this.subTitle});
+  GridInfo({@required this.icon, @required this.url, @required this.title, @required this.subTitle});
 }
 
 class DelayBuildWidgetTestPage extends StatefulWidget {
@@ -72,12 +77,16 @@ class _DelayBuildWidgetTestPageState extends State<DelayBuildWidgetTestPage> {
   @override
   void initState() {
     super.initState();
-
+    String content = '拉开就分开了拉萨附近都是六块腹肌饭撒的克己复礼看到撒酒疯黎噶搜ID股份分开那份礼物来自空间的佛i阿哥辣椒素的弗兰克为列宁格勒';
+    Random random = Random();
     imageUrls.forEach((element) {
+      int titleStart = random.nextInt(content.length - 5);
+      int subTitleStart = random.nextInt(content.length - 5);
       dataList.add(
         GridInfo(
-          subTitle: '阿斯顿发',
-          title: '大噶地方',
+          icon: random.nextInt(9).toString(),
+          subTitle: content.substring(titleStart, titleStart + random.nextInt(4) + 1),
+          title: content.substring(subTitleStart, subTitleStart + random.nextInt(4) + 1),
           url:
               'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
         ),
@@ -90,6 +99,12 @@ class _DelayBuildWidgetTestPageState extends State<DelayBuildWidgetTestPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('延时构建小部件测试'),
+        actions: [
+          FlatButton(
+            onPressed: () {},
+            child: Text('刷新'),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
@@ -97,40 +112,79 @@ class _DelayBuildWidgetTestPageState extends State<DelayBuildWidgetTestPage> {
           itemCount: dataList.length,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            crossAxisSpacing: 10,
-            mainAxisSpacing: 10,
+            crossAxisSpacing: 0,
+            mainAxisSpacing: 0,
             childAspectRatio: 0.8,
           ),
           itemBuilder: (_, index) {
             GridInfo info = dataList[index];
-            return Column(
-              children: [
-                Expanded(
-                  child: Image.network(
-                    info.url,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      info.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+            return Padding(
+              padding: const EdgeInsets.all(4),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: 
+                    // SizedBox(),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Stack(
+                        children: [
+                          Image.network(
+                            info.url,
+                            fit: BoxFit.contain,
+                          ),
+                          Text(
+                            info.title + info.subTitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: ColorHelper.Black153,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Spacer(),
-                    Text(
-                      info.subTitle,
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                  Row(
+                    children: [
+                      Text(
+                        info.title,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.red,
+                        ),
+                      ),
+                      Image.asset(ImageHelper.image('icon_${info.icon}.png'),width: 30,),
+                      Spacer(),
+                      Text(
+                        info.subTitle,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             );
           },
         ),
       ),
+    );
+  }
+}
+
+class DelayBuildChild extends StatefulWidget {
+  final Widget child;
+  final Widget placeholder;
+  const DelayBuildChild({Key key, this.child, this.placeholder}) : super(key: key);
+  @override
+  _DelayBuildChildState createState() => _DelayBuildChildState();
+}
+
+class _DelayBuildChildState extends State<DelayBuildChild> {
+  RenderObject a;
+  @override
+  Widget build(BuildContext context) {
+    return RepaintBoundary(
+      child: widget.child,
     );
   }
 }

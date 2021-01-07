@@ -7,17 +7,7 @@ import Flutter
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        let router = PlatformRouterImp.init();
-        FlutterBoostPlugin.sharedInstance().startFlutter(with: router, onStart: { (engine) in
-            
-        });
-//        GeneratedPluginRegistrant.register(with: self)
-        self.window = UIWindow.init(frame: UIScreen.main.bounds)
-        let viewController = FLBFlutterViewContainer.init();
-        let navi = UINavigationController.init(rootViewController: viewController)
-        navi.setNavigationBarHidden(true, animated: false)
-        self.window.rootViewController = navi
-        self.window.makeKeyAndVisible()
+       GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 }
