@@ -3,6 +3,7 @@ import 'package:flutter_summary/main/performance/widgets/cupertino_alert_dialog.
 import 'package:flutter_summary/router/router.dart';
 
 import 'widgets/delay_build_widget.dart';
+import 'widgets/not_delay_build_widget.dart';
 
 class ListTileInfo {
   final String title;
@@ -27,6 +28,12 @@ class PerformanceListPage extends StatelessWidget {
           subTitle: '延时构建小部件',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: DelayBuildWidgetTestPage()));
+          }),
+      ListTileInfo(
+          title: 'NotDelayBuildWidget',
+          subTitle: '与DelayBuildWidget做性能对比',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: NotDelayBuildWidget()));
           }),
     ];
     return Scaffold(
