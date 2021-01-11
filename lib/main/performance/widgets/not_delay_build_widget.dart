@@ -273,6 +273,9 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
         actions: [
           FlatButton(
             onPressed: () {
+              // setState(() {
+                
+              // });
               ScrollController scrollController = _firstScrollController;
               if (scrollController.offset > 100) {
                 scrollController.animateTo(0, duration: Duration(milliseconds: 2000), curve: Curves.linear);

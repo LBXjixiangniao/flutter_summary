@@ -11,7 +11,13 @@ class GridInfo {
   final String subTitle;
   final int index;
 
-  GridInfo({@required this.index, @required this.icon, @required this.url, @required this.title, @required this.subTitle, @required this.aboveIcon});
+  GridInfo(
+      {@required this.index,
+      @required this.icon,
+      @required this.url,
+      @required this.title,
+      @required this.subTitle,
+      @required this.aboveIcon});
 }
 
 class DelayBuildWidgetTestPage extends NotDelayBuildWidget {
@@ -24,66 +30,45 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
   String get pageTitle => '延时构建小部件测试';
   Widget item(GridInfo info) {
     return DelayBuildChild(
-      info: info,
+      placeholder: Container(
+        color: Colors.red,
+        width: 60,
+        height: 80,
+      ),
       child: super.item(info),
     );
   }
 }
 
+/**
+ * DelayBuildChild的child会延时build
+ * placeholder：child还没build的时候显示
+ * buildManager：用于管理延时build，不传递该参数就使用默认的_delayBuildManager管理
+ */
 class DelayBuildChild extends StatefulWidget {
-  final GridInfo info;
   final Widget child;
   final Widget placeholder;
-  const DelayBuildChild({Key key, this.child, this.placeholder, this.info}) : super(key: key);
+  final DelayBuildManager buildManager;
+  DelayBuildChild({Key key, this.child, this.placeholder, this.buildManager}) : super(key: key);
   @override
   _DelayBuildChildState createState() => _DelayBuildChildState();
-
-  @override
-  DelayBuildElement createElement() {
-    return DelayBuildElement(this);
-  }
-}
-
-class DelayBuildElement extends StatefulElement {
-  DelayBuildElement(DelayBuildChild widget) : super(widget);
-
-  @override
-  void update(covariant DelayBuildChild newWidget) {
-    (state as _DelayBuildChildState).info.valid = false;
-    super.update(newWidget);
-  }
 }
 
 class _DelayBuildChildState extends State<DelayBuildChild> {
   bool canBuild = false;
   BuildInfo info;
+  DelayBuildManager buildManager;
 
   @override
   void dispose() {
     super.dispose();
     info.valid = false;
-    print('dispose:${widget.info.index}');
-  }
-
-  @override
-  void deactivate() {
-    info.valid = false;
-    super.deactivate();
   }
 
   @override
   void initState() {
     super.initState();
-    print('initState:${widget.info.index}');
-    print('list length:${DelayBuildManager._list.length}');
-    info = BuildInfo(
-      rebuild: () {
-        setState(() {
-          canBuild = true;
-        });
-      },
-    );
-    delayBuildManager.add(info);
+    createInfoAndAddToBuildStack();
   }
 
   @override
@@ -91,6 +76,10 @@ class _DelayBuildChildState extends State<DelayBuildChild> {
     super.didUpdateWidget(oldWidget);
     info.valid = false;
     canBuild = false;
+    createInfoAndAddToBuildStack();
+  }
+
+  void createInfoAndAddToBuildStack() {
     info = BuildInfo(
       rebuild: () {
         if (mounted) {
@@ -100,56 +89,59 @@ class _DelayBuildChildState extends State<DelayBuildChild> {
         }
       },
     );
-    delayBuildManager.add(info);
+    buildManager = widget.buildManager ?? _delayBuildManager;
+    buildManager._add(info);
   }
 
   @override
   Widget build(BuildContext context) {
-    print('build:${widget.info.index},canBuild:$canBuild');
     return RepaintBoundary(
-      child: !canBuild ? SizedBox(width: 0,height:0,) : widget.child,
-      // child: Visibility(
-      //   visible: canBuild,
-      //   child: widget.child,
-      // ),
+      child: !canBuild ? widget.placeholder : widget.child,
     );
   }
 }
 
-DelayBuildManager delayBuildManager = DelayBuildManager();
+DelayBuildManager _delayBuildManager = DelayBuildManager();
 
 class DelayBuildManager {
-  static ListQueue<BuildInfo> _list = ListQueue<BuildInfo>();
-  bool get haveRebuildAction => true;
-  bool isRunning = false;
-  void add(BuildInfo info) {
+  final int delayMilliseconds;
+
+  final LinkedList<BuildInfo> _list = LinkedList<BuildInfo>();
+  bool _isRunning = false;
+
+  bool get isRunning => _isRunning;
+
+  DelayBuildManager({this.delayMilliseconds = 96});
+  void _add(BuildInfo info) {
     _list.add(info);
-    if (!isRunning) {
-      isRunning = true;
-      Future.delayed(Duration(milliseconds: 96), () {
-        actionNext();
+    if (!_isRunning) {
+      _isRunning = true;
+      Future.delayed(Duration(milliseconds: delayMilliseconds), () {
+        _actionNext();
       });
     }
   }
 
-  void actionNext() {
+  void _actionNext() {
     if (_list.isNotEmpty) {
-      isRunning = true;
+      _isRunning = true;
       BuildInfo info = _list.last;
+      info.unlink();
       if (info != null && info.valid) {
         info.rebuild?.call();
+        Future.delayed(Duration(milliseconds: delayMilliseconds), () {
+          _actionNext();
+        });
+      } else {
+        _actionNext();
       }
-      _list.removeLast();
-      Future.delayed(Duration(milliseconds: 96), () {
-        actionNext();
-      });
     } else {
-      isRunning = false;
+      _isRunning = false;
     }
   }
 }
 
-class BuildInfo {
+class BuildInfo extends LinkedListEntry<BuildInfo> {
   bool valid;
   final VoidCallback rebuild;
 
