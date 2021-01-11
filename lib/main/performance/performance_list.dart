@@ -4,6 +4,7 @@ import 'package:flutter_summary/router/router.dart';
 
 import 'widgets/delay_build_widget.dart';
 import 'widgets/not_delay_build_widget.dart';
+import 'widgets/rounded_image_page.dart';
 
 class ListTileInfo {
   final String title;
@@ -34,6 +35,12 @@ class PerformanceListPage extends StatelessWidget {
           subTitle: '与DelayBuildWidget做性能对比',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: NotDelayBuildWidget()));
+          }),
+      ListTileInfo(
+          title: 'RoundedImage',
+          subTitle: '圆角图片',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: RoundedImagePage()));
           }),
     ];
     return Scaffold(
