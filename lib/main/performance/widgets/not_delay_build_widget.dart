@@ -169,7 +169,9 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           children: [
             Image.network(
               info.url,
-              fit: BoxFit.contain,
+              fit: BoxFit.cover,
+              width: BoxConstraints.expand().maxWidth,
+              height: BoxConstraints.expand().maxHeight,
             ),
             Column(
               children: [

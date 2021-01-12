@@ -1,5 +1,8 @@
-import 'dart:math';
+import 'dart:async';
+import 'dart:isolate';
 import 'dart:typed_data';
+import 'package:flutter_summary/main/performance/widgets/round_corners_image.dart';
+import 'package:flutter_summary/main/performance/widgets/round_corners_image_provider.dart';
 import 'package:image/image.dart' as img;
 
 import 'package:flutter/material.dart';
@@ -19,129 +22,25 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
     super.initState();
     // assign it value here
     getImage();
+    ReceivePort receivePort = ReceivePort();
+    //创建新的isolate
+    Isolate.spawn(entryPoint, receivePort.sendPort, debugName: 'gyIsolate');
+
+    receivePort.listen((message) {
+      debugPrint('receive $message');
+    });
   }
 
   void getImage() async {
     // put them here
-    ByteData byteData = (await rootBundle.load(ImageHelper.image('icon_round_corners.png')));
-    img.Image imageInfo = img.decodeImage(byteData.buffer.asUint8List());
-    createRoundCorners(image: imageInfo, radius: 180,);
+    // ByteData byteData = (await rootBundle.load(ImageHelper.image('icon_round_corners.png')));
+    // img.Image imageInfo = img.decodeImage(byteData.buffer.asUint8List());
+    // Uint32List uint32list = imageInfo.data.sublist(imageInfo.data.length ~/ 2);
+    // imageInfo = img.Image.fromBytes(imageInfo.width, imageInfo.height~/3, uint32list);
+    // imageInfo.createRoundCorners(image: imageInfo, radius: 400, color: Colors.red);
+    // image = Image.memory(img.encodePng(imageInfo));
 
-    image = Image.memory(img.encodePng(imageInfo));
-
-    setState(() {});
-  }
-
-  void createRoundCorners({
-    @required img.Image image,
-    @required int radius,
-    Color color,
-  }) {
-    assert(radius > 1 && image != null);
-    if (radius <= 1 || image == null) return;
-    //AARRGGBB
-    int colorValue = color?.value ?? Colors.transparent.value;
-    // AABBGGRR
-    colorValue = ((colorValue & 0x00ff0000) >> 16) | ((colorValue & 0xff) << 16) | (colorValue & 0xff00ff00);
-
-    // 右下角中心点
-    _Position rightBottomCenter = _Position(image.width - radius, image.height - radius);
-    // 右上角中心点
-    _Position rightTopCenter = _Position(image.width - radius, radius - 1);
-    // 左上角中心点
-    _Position leftTopCenter = _Position(radius - 1, radius - 1);
-    // 左下角中心点
-    _Position leftBottomCenter = _Position(radius - 1, image.height - radius);
-    void traverseSetPixelsColor({int x, int startY}) {
-      int y = max(startY, x);
-      while (y < radius && y >= x && pow(x, 2) + pow(y, 2) < pow(radius, 2)) {
-        y++;
-      }
-
-      for (int i = y; i < radius; i++) {
-        int pixelX = x;
-        int pixelY = i;
-
-        ///右下角
-        setPixelColor(
-          image: image,
-          center: rightBottomCenter,
-          relativePoint: _Position(pixelX, pixelY),
-          colorValue: colorValue,
-        );
-        if (pixelX != pixelY)
-          setPixelColor(
-            image: image,
-            center: rightBottomCenter,
-            relativePoint: _Position(pixelY, pixelX),
-            colorValue: colorValue,
-          );
-
-        ///右上角
-        setPixelColor(
-          image: image,
-          center: rightTopCenter,
-          relativePoint: _Position(pixelX, -pixelY),
-          colorValue: colorValue,
-        );
-        if (pixelX != pixelY)
-          setPixelColor(
-            image: image,
-            center: rightTopCenter,
-            relativePoint: _Position(pixelY, -pixelX),
-            colorValue: colorValue,
-          );
-
-        ///左上角
-        setPixelColor(
-          image: image,
-          center: leftTopCenter,
-          relativePoint: _Position(-pixelX, -pixelY),
-          colorValue: colorValue,
-        );
-        if (pixelX != pixelY)
-          setPixelColor(
-            image: image,
-            center: leftTopCenter,
-            relativePoint: _Position(-pixelY, -pixelX),
-            colorValue: colorValue,
-          );
-
-        ///左下角
-        setPixelColor(
-          image: image,
-          center: leftBottomCenter,
-          relativePoint: _Position(-pixelX, pixelY),
-          colorValue: colorValue,
-        );
-        if (pixelX != pixelY)
-          setPixelColor(
-            image: image,
-            center: leftBottomCenter,
-            relativePoint: _Position(-pixelY, pixelX),
-            colorValue: colorValue,
-          );
-      }
-      if (x < radius) {
-        traverseSetPixelsColor(x: x + 1, startY: y - 1);
-      }
-    }
-
-    traverseSetPixelsColor(
-      x: 0,
-      startY: radius,
-    );
-  }
-
-  void setPixelColor({
-    @required _Position center,
-    @required _Position relativePoint,
-    int colorValue,
-    @required img.Image image,
-  }) {
-    int x = center.x + relativePoint.x;
-    int y = center.y + relativePoint.y;
-    image.setPixel(x, y, colorValue);
+    // setState(() {});
   }
 
   @override
@@ -162,16 +61,42 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(8),
-        child: image,
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 80),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // image ?? SizedBox(),
+            // Image(
+            //   image: RoundCornersAssetImage(
+            //     ImageHelper.image('icon_round_corners.png'),
+            //     cornerRadius: 30,
+            //   ),
+            // ),
+            // Image.asset(ImageHelper.image('icon_round_corners.png'),),
+            // Image.asset(ImageHelper.image('icon_round_corners.png'),),
+            Image(
+              image: RoundCornersAssetImage(
+                ImageHelper.image('icon_round_corners.png'),
+                cornerRadius: 100,
+              ),
+            ),
+            Image(
+              image: RoundCornersAssetImage(
+                ImageHelper.image('icon_round_corners.png'),
+                cornerRadius: 100,
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 }
 
-class _Position {
-  final int x;
-  final int y;
-
-  _Position(this.x, this.y);
+void entryPoint(SendPort sendPort) {
+  //该过程运行在新的isolate
+  Timer.periodic(Duration(seconds: 5), (Timer timer) {
+    sendPort.send("hello gityuan");
+    debugPrint('build:${Isolate.current.debugName}');
+  });
 }
