@@ -172,6 +172,8 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
               fit: BoxFit.cover,
               width: BoxConstraints.expand().maxWidth,
               height: BoxConstraints.expand().maxHeight,
+              cacheHeight: 200,
+              cacheWidth: 400,
             ),
             Column(
               children: [

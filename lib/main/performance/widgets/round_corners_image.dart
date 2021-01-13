@@ -5,13 +5,20 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as IMG;
 
 extension IMg_Extension on IMG.Image {
-  void createRoundCorners({
+  void setRoundCorners({
+    @required int radius,
+    Color color,
+  }) {
+    createRoundCorners(image: this, radius: radius, color: color);
+  }
+
+  static void createRoundCorners({
     @required IMG.Image image,
     @required int radius,
     Color color,
   }) {
     assert(radius > 1 && image != null);
-    if (radius <= 1 || image == null) return;
+    if (radius == null || radius <= 1 || image == null) return;
     Color toSetColor = color ?? Colors.transparent;
     int colorValue = IMG.Color.fromRgba(toSetColor.red, toSetColor.green, toSetColor.blue, toSetColor.alpha);
 
@@ -104,7 +111,7 @@ extension IMg_Extension on IMG.Image {
     );
   }
 
-  void _setPixelColor({
+  static void _setPixelColor({
     @required _Position center,
     @required _Position relativePoint,
     @required int colorValue,
