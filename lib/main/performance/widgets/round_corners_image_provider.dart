@@ -9,13 +9,11 @@ import 'package:flutter_summary/main/performance/widgets/round_corners_image.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: implementation_imports
-import 'package:flutter/src/painting/_network_image_io.dart'
-    if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
+import 'package:flutter/src/painting/_network_image_io.dart' if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
 
 import 'isolate_manager.dart';
 
-final IsolateManager _isolateManager =
-    IsolateManager(isolateFunction: _createRoundCornerIsolateMethod, reverseOrder: true);
+final IsolateManager _isolateManager = IsolateManager(isolateFunction: _createRoundCornerIsolateMethod, reverseOrder: true);
 
 enum ClipLocation {
   Start,
@@ -23,7 +21,7 @@ enum ClipLocation {
   End,
 }
 
-mixin CornerAndClipKeyMixin on AssetBundleImageKey{
+mixin CornerAndClipKeyMixin on AssetBundleImageKey {
   ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果showSize为空，直接对图片设置圆角
   int get cornerRadius;
@@ -41,21 +39,12 @@ mixin CornerAndClipKeyMixin on AssetBundleImageKey{
 
   @override
   bool operator ==(Object other) {
-    bool b = other is CornerAndClipKeyMixin &&
+    return other is CornerAndClipKeyMixin &&
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
-        (other.haveValidShowSize == haveValidShowSize) &&
-        (haveValidShowSize
-            ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation)
-            : true);
-    if (!b) {
-      print('key not equal');
-    }
-    else {
-      print('key equal');
-    }
-    return b;
+        other.haveValidShowSize == haveValidShowSize &&
+        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
   }
 
   @override
@@ -78,12 +67,11 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
-    final DecoderCallback decodeRoundCorners =
-        (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
-      assert(() {
-        print('CornerAndClipProviderMixin load');
-        return true;
-      }());
+    final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
+      // assert(() {
+      //   print('CornerAndClipProviderMixin load');
+      //   return true;
+      // }());
       Uint8List uint8List;
       if (cornerRadius != null || (showWidth != null && showHeight != null && showHeight > 0 && showWidth > 0)) {
         var tmpUint8List = await _isolateManager.send(
@@ -101,8 +89,7 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         }
       }
       uint8List ??= bytes;
-      return decode(uint8List,
-          cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
+      return decode(uint8List, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
     };
     return super.load(key, decodeRoundCorners);
   }
@@ -111,21 +98,12 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 
   @override
   bool operator ==(Object other) {
-    bool b = other is CornerAndClipProviderMixin &&
+    return other is CornerAndClipProviderMixin &&
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
-        (other.haveValidShowSize == haveValidShowSize) &&
-        (haveValidShowSize
-            ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation)
-            : true);
-    if (!b) {
-      print('provider not equal');
-    }
-    else {
-      print('provider equal');
-    }
-    return b;
+        other.haveValidShowSize == haveValidShowSize &&
+        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
   }
 
   @override
@@ -355,9 +333,7 @@ class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAnd
 }
 
 Future _createRoundCornerIsolateMethod(dynamic info) async {
-  if (info is _IsolateMessage &&
-      ((info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) ||
-          info.cornerRadius != null)) {
+  if (info is _IsolateMessage && ((info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) || info.cornerRadius != null)) {
     IMG.Image imageInfo = IMG.decodeImage(info.bytes);
     double scale;
     if (info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) {

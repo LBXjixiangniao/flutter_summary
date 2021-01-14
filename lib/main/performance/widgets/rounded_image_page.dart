@@ -16,8 +16,20 @@ class RoundedImagePage extends StatefulWidget {
 class _RoundedImagePageState extends State<RoundedImagePage> {
   int radius = 10;
   Color color = Colors.red;
+  double height = 190;
+  bool showWidth = true;
+  ClipLocation location = ClipLocation.End;
+
   @override
   Widget build(BuildContext context) {
+    print('========\n');
+    print('radius:$radius');
+    print('color:$color');
+    print('height:$height');
+    print('showWidth:$showWidth');
+    print('location:$location \n');
+    print('*************\n');
+
     return Scaffold(
       backgroundColor: Colors.yellow,
       appBar: AppBar(
@@ -26,7 +38,7 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
           FlatButton(
             onPressed: () {
               setState(() {
-                PaintingBinding.instance.imageCache.clear();
+                // PaintingBinding.instance.imageCache.clear();
               });
             },
             child: Text('刷新'),
@@ -34,7 +46,7 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 100),
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 120),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -45,6 +57,60 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
                 });
               },
               child: Text('cornerRadius add'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  radius--;
+                });
+              },
+              child: Text('cornerRadius delete'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  height ??= 190;
+                  height++;
+                });
+              },
+              child: Text('height add'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  height ??= 190;
+                  height--;
+                });
+              },
+              child: Text('height delete'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  height = null;
+                });
+              },
+              child: Text('height null'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  showWidth = !showWidth;
+                });
+              },
+              child: Text(showWidth ? 'hide width' : 'show width'),
+            ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  if (location == ClipLocation.End) {
+                    location = ClipLocation.Start;
+                  } else {
+                    location = ClipLocation.End;
+                  }
+                });
+              },
+              child: Text('$location'),
             ),
             FlatButton(
               onPressed: () {
@@ -60,10 +126,10 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
                 image: RoundCornersAssetImage(
                   ImageHelper.image('icon_round_corners.png'),
                   cornerRadius: radius,
-                  cornerColor: Colors.red,
-                  showWidth: constraints.maxWidth,
-                  showHeight: 190,
-                  clipLocation: ClipLocation.End,
+                  cornerColor: color,
+                  showWidth: showWidth ? constraints.maxWidth : null,
+                  showHeight: height,
+                  clipLocation: location,
                 ),
               );
             }),
@@ -72,4 +138,17 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
       ),
     );
   }
+}
+
+class Key {
+  final int valueOne;
+  final int valueTwo;
+  Key(this.valueOne, this.valueTwo);
+
+  bool operator ==(Object other) {
+    return other is Key && other.valueTwo == valueTwo ;
+  }
+
+  @override
+  int get hashCode => valueOne;
 }
