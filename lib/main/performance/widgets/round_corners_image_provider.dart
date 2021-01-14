@@ -68,12 +68,20 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
     final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
-      // assert(() {
-      //   print('CornerAndClipProviderMixin load');
-      //   return true;
-      // }());
+      assert(() {
+        print('CornerAndClipProviderMixin load');
+        return true;
+      }());
       Uint8List uint8List;
-      if (cornerRadius != null || (showWidth != null && showHeight != null && showHeight > 0 && showWidth > 0)) {
+      if (cornerRadius != null ||
+          (showWidth != null &&
+              showHeight != null &&
+              showHeight > 0 &&
+              showWidth > 0 &&
+              showHeight != double.nan &&
+              showHeight != double.infinity &&
+              showWidth != double.nan &&
+              showWidth != double.infinity)) {
         var tmpUint8List = await _isolateManager.send(
           _IsolateMessage(
             bytes: bytes,
@@ -330,13 +338,25 @@ class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAnd
     this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(url, scale: scale, headers: headers);
+  @override
+  Future<network_image.NetworkImage> obtainKey(ImageConfiguration configuration) {
+    // TODO: implement obtainKey
+    return super.obtainKey(configuration);
+  }
 }
 
 Future _createRoundCornerIsolateMethod(dynamic info) async {
   if (info is _IsolateMessage && ((info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) || info.cornerRadius != null)) {
     IMG.Image imageInfo = IMG.decodeImage(info.bytes);
     double scale;
-    if (info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) {
+    if (info.showHeight != null &&
+        info.showHeight > 0 &&
+        info.showWidth != null &&
+        info.showWidth > 0 &&
+        info.showHeight != double.nan &&
+        info.showHeight != double.infinity &&
+        info.showWidth != double.nan &&
+        info.showWidth != double.infinity) {
       scale = min(imageInfo.height / info.showHeight, imageInfo.width / info.showWidth);
       int targetHeight = (info.showHeight * scale).toInt();
       int targetWidth = (info.showWidth * scale).toInt();

@@ -14,7 +14,7 @@ class RoundedImagePage extends StatefulWidget {
 }
 
 class _RoundedImagePageState extends State<RoundedImagePage> {
-  int radius = 10;
+  int radius = 30;
   Color color = Colors.red;
   double height = 190;
   bool showWidth = true;
@@ -46,85 +46,92 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 120),
+        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 100),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  radius++;
-                });
-              },
-              child: Text('cornerRadius add'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  radius--;
-                });
-              },
-              child: Text('cornerRadius delete'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  height ??= 190;
-                  height++;
-                });
-              },
-              child: Text('height add'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  height ??= 190;
-                  height--;
-                });
-              },
-              child: Text('height delete'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  height = null;
-                });
-              },
-              child: Text('height null'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  showWidth = !showWidth;
-                });
-              },
-              child: Text(showWidth ? 'hide width' : 'show width'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  if (location == ClipLocation.End) {
-                    location = ClipLocation.Start;
-                  } else {
-                    location = ClipLocation.End;
-                  }
-                });
-              },
-              child: Text('$location'),
-            ),
-            FlatButton(
-              onPressed: () {
-                setState(() {
-                  Random random = Random();
-                  color = Color.fromRGBO(random.nextInt(255), random.nextInt(255), random.nextInt(255), 255);
-                });
-              },
-              child: Text('change color'),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       radius++;
+            //     });
+            //   },
+            //   child: Text('cornerRadius add'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       radius--;
+            //     });
+            //   },
+            //   child: Text('cornerRadius delete'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       height ??= 190;
+            //       height++;
+            //     });
+            //   },
+            //   child: Text('height add'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       height ??= 190;
+            //       height--;
+            //     });
+            //   },
+            //   child: Text('height delete'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       height = null;
+            //     });
+            //   },
+            //   child: Text('height null'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       showWidth = !showWidth;
+            //     });
+            //   },
+            //   child: Text(showWidth ? 'hide width' : 'show width'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       if (location == ClipLocation.End) {
+            //         location = ClipLocation.Start;
+            //       } else {
+            //         location = ClipLocation.End;
+            //       }
+            //     });
+            //   },
+            //   child: Text('$location'),
+            // ),
+            // FlatButton(
+            //   onPressed: () {
+            //     setState(() {
+            //       Random random = Random();
+            //       color = Color.fromRGBO(random.nextInt(255), random.nextInt(255), random.nextInt(255), 255);
+            //     });
+            //   },
+            //   child: Text('change color'),
+            // ),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(radius.toDouble()),
+              child: Image.asset(
+                ImageHelper.image('icon_round_corners.png'),
+              ),
             ),
             LayoutBuilder(builder: (_, constraints) {
               return Image(
-                image: RoundCornersAssetImage(
-                  ImageHelper.image('icon_round_corners.png'),
+                image: RoundCornersNetworkImage(
+                  // ImageHelper.image('icon_round_corners.png'),
+                  'https://images.pexels.com/photos/6032603/pexels-photo-6032603.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
                   cornerRadius: radius,
                   cornerColor: color,
                   showWidth: showWidth ? constraints.maxWidth : null,
@@ -146,7 +153,7 @@ class Key {
   Key(this.valueOne, this.valueTwo);
 
   bool operator ==(Object other) {
-    return other is Key && other.valueTwo == valueTwo ;
+    return other is Key && other.valueTwo == valueTwo;
   }
 
   @override

@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_summary/main/performance/widgets/round_corners_image_provider.dart';
 import 'package:flutter_summary/styles/color_helper.dart';
 import 'package:flutter_summary/util/image_helper.dart';
 
@@ -126,13 +127,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
             children: [
               Expanded(
                 // child: SizedBox(),
-                child: LayoutBuilder(builder: (_, constraints) {
-                  return SizedBox(
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                    child: childBuilder(info),
-                  );
-                }),
+                child: childBuilder(info),
               ),
               Row(
                 children: [
@@ -160,20 +155,23 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
       },
     );
   }
+
   Widget item(GridInfo info) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SizedBox(
-        width: BoxConstraints.expand().maxWidth,
-        child: Stack(
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        return Stack(
           children: [
-            Image.network(
-              info.url,
+            Image(
+              image: RoundCornersNetworkImage(
+                info.url,
+                cornerRadius: 30,
+                cornerColor: Colors.white,
+                showWidth: constraints.maxWidth,
+                showHeight: constraints.maxHeight,
+              ),
               fit: BoxFit.cover,
-              width: BoxConstraints.expand().maxWidth,
-              height: BoxConstraints.expand().maxHeight,
-              cacheHeight: 200,
-              cacheWidth: 400,
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
             ),
             Column(
               children: [
@@ -263,8 +261,8 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
               ],
             ),
           ],
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -278,7 +276,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           FlatButton(
             onPressed: () {
               // setState(() {
-                
+
               // });
               ScrollController scrollController = _firstScrollController;
               if (scrollController.offset > 100) {
