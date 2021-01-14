@@ -23,7 +23,7 @@ enum ClipLocation {
   End,
 }
 
-mixin CornerAndClipKeyMixin {
+mixin CornerAndClipKeyMixin on AssetBundleImageKey{
   ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果showSize为空，直接对图片设置圆角
   int get cornerRadius;
@@ -59,7 +59,7 @@ mixin CornerAndClipKeyMixin {
   }
 
   @override
-  int get hashCode => hashValues(super.hashCode, cornerRadius, cornerColor, showHeight, showWidth, clipLocation);
+  int get hashCode => hashValues(super.hashCode, cornerRadius, haveValidShowSize);
 }
 
 mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
@@ -129,7 +129,7 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
   }
 
   @override
-  int get hashCode => hashValues(super.hashCode, cornerRadius, cornerColor, showHeight, showWidth, clipLocation);
+  int get hashCode => hashValues(super.hashCode, cornerRadius, haveValidShowSize);
 }
 
 class RoundCornersImageProvider {
