@@ -42,14 +42,84 @@ class IsolateManager {
   // The function must be a top-level function or a static method
   final IsolateFunction isolateFunction;
 
-  IsolateManager({this.maxCocurrentIsolateCount = 3, this.reverseOrder = false, @required this.isolateFunction})
-      : assert(maxCocurrentIsolateCount > 0 && isolateFunction != null);
+  final bool keepRunning;
+
+  Isolate _keepRunningIsolate;
+  SendPort _keepRunningIsolateSendPort;
+  Capability _pauseCapability;
+
+  IsolateManager({
+    this.maxCocurrentIsolateCount = 3,
+    this.reverseOrder = false,
+    @required this.isolateFunction,
+    this.keepRunning = true,
+  }) : assert(maxCocurrentIsolateCount > 0 && isolateFunction != null) {
+    if (keepRunning == true) {
+      ReceivePort receivePort = ReceivePort();
+      String debugName = DateTime.now().toIso8601String();
+      Isolate.spawn(
+        _isolateMethod,
+        receivePort.sendPort,
+        errorsAreFatal: false,
+        debugName: debugName,
+      ).then((newIsolate) {
+        if (newIsolate is Isolate) {
+          _keepRunningIsolate = newIsolate;
+
+          ///新建Isolate成功
+          //设置error和exit监听
+          ReceivePort errorPort = ReceivePort();
+          ReceivePort exitPort = ReceivePort();
+          newIsolate.addOnExitListener(exitPort.sendPort);
+          newIsolate.addErrorListener(errorPort.sendPort);
+          errorPort.listen((message) {
+            ///onError
+            _processingActionList.remove(newIsolate)?.completer?.completeError(message);
+            //执行下一个事件
+            keepRunningIsolateNextAction();
+          });
+          exitPort.listen((message) {
+            // handleNextAction();
+          });
+
+          receivePort.listen((message) {
+            ///从isolate中传递过来的信息
+            if (message is SendPort) {
+              _keepRunningIsolateSendPort = message;
+              //执行下一个事件
+              keepRunningIsolateNextAction();
+            } else {
+              _processingActionList.remove(newIsolate)?.completer?.complete(message);
+              //执行下一个事件
+              keepRunningIsolateNextAction();
+            }
+          });
+        }
+      });
+    }
+  }
+
+  void keepRunningIsolateNextAction() {
+    if(_keepRunningIsolateSendPort == null) return;
+    if (_penddingActionList.isNotEmpty) {
+      _Action action = reverseOrder == true ? _penddingActionList.removeLast() : _penddingActionList.removeAt(0);
+      _processingActionList[_keepRunningIsolate] = action;
+      _keepRunningIsolateSendPort.send(_MessageInfo(function: isolateFunction, value: action.message));
+      if (_pauseCapability != null) {
+        _keepRunningIsolate.resume(_pauseCapability);
+        _pauseCapability = null;
+      }
+    } else if(_pauseCapability == null){
+      _pauseCapability = _keepRunningIsolate.pause();
+    }
+  }
 
   Future<dynamic> send(dynamic message) async {
     assert(message != null);
     Completer completer = Completer();
     _penddingActionList.add(_Action(message: message, completer: completer));
-    handleNextAction();
+    // handleNextAction();
+    keepRunningIsolateNextAction();
     return completer.future;
   }
 

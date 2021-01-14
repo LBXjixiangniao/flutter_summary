@@ -14,11 +14,10 @@ class RoundedImagePage extends StatefulWidget {
 }
 
 class _RoundedImagePageState extends State<RoundedImagePage> {
-
+  int radius = 10;
+  Color color = Colors.red;
   @override
   Widget build(BuildContext context) {
-    int radiusOne = Random().nextInt(100) + 10;
-    int radiusTwo = Random().nextInt(30) + 10;
     return Scaffold(
       backgroundColor: Colors.yellow,
       appBar: AppBar(
@@ -27,7 +26,7 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
           FlatButton(
             onPressed: () {
               setState(() {
-                
+                PaintingBinding.instance.imageCache.clear();
               });
             },
             child: Text('刷新'),
@@ -35,31 +34,39 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 80),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 100),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // image ?? SizedBox(),
-            // Image(
-            //   image: RoundCornersAssetImage(
-            //     ImageHelper.image('icon_round_corners.png'),
-            //     cornerRadius: 30,
-            //   ),
-            // ),
-            // Image.asset(ImageHelper.image('icon_round_corners.png'),),
-            // Image.asset(ImageHelper.image('icon_round_corners.png'),),
-            Image(
-              image: RoundCornersAssetImage(
-                ImageHelper.image('icon_round_corners.png'),
-                cornerRadius: radiusOne,
-              ),
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  radius++;
+                });
+              },
+              child: Text('cornerRadius add'),
             ),
-            Image(
-              image: RoundCornersAssetImage(
-                ImageHelper.image('icon_round_corners.png'),
-                cornerRadius: radiusTwo,
-              ),
-            )
+            FlatButton(
+              onPressed: () {
+                setState(() {
+                  Random random = Random();
+                  color = Color.fromRGBO(random.nextInt(255), random.nextInt(255), random.nextInt(255), 255);
+                });
+              },
+              child: Text('change color'),
+            ),
+            LayoutBuilder(builder: (_, constraints) {
+              return Image(
+                image: RoundCornersAssetImage(
+                  ImageHelper.image('icon_round_corners.png'),
+                  cornerRadius: radius,
+                  cornerColor: Colors.red,
+                  showWidth: constraints.maxWidth,
+                  showHeight: 190,
+                  clipLocation: ClipLocation.End,
+                ),
+              );
+            }),
           ],
         ),
       ),
