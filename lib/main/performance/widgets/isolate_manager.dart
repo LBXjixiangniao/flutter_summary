@@ -5,6 +5,13 @@ import 'package:flutter/material.dart';
 
 typedef IsolateFunction = Future Function(dynamic message);
 
+class IsolateInfo {
+  final Isolate isolate;
+  SendPort sendPort;
+
+  IsolateInfo({this.isolate, this.sendPort});
+}
+
 class _Action {
   final dynamic message;
   final Completer completer;
@@ -42,75 +49,27 @@ class IsolateManager {
   // The function must be a top-level function or a static method
   final IsolateFunction isolateFunction;
 
+  ///是否保持一个Isolate一直运行
   final bool keepRunning;
 
-  Isolate _keepRunningIsolate;
-  SendPort _keepRunningIsolateSendPort;
+  ///是否保持一个Isolate一直运行
+  IsolateInfo _keepRunningIsolateInfo;
+
+  ///如果_pauseCapability不为空，则表示_keepRunningIsolateInfo.isolate处于pause状态
   Capability _pauseCapability;
 
   IsolateManager({
     this.maxCocurrentIsolateCount = 3,
     this.reverseOrder = false,
     @required this.isolateFunction,
-    this.keepRunning = true,
+    this.keepRunning = false,
   }) : assert(maxCocurrentIsolateCount > 0 && isolateFunction != null) {
     if (keepRunning == true) {
-      ReceivePort receivePort = ReceivePort();
-      String debugName = DateTime.now().toIso8601String();
-      Isolate.spawn(
-        _isolateMethod,
-        receivePort.sendPort,
-        errorsAreFatal: false,
-        debugName: debugName,
-      ).then((newIsolate) {
-        if (newIsolate is Isolate) {
-          _keepRunningIsolate = newIsolate;
-
-          ///新建Isolate成功
-          //设置error和exit监听
-          ReceivePort errorPort = ReceivePort();
-          ReceivePort exitPort = ReceivePort();
-          newIsolate.addOnExitListener(exitPort.sendPort);
-          newIsolate.addErrorListener(errorPort.sendPort);
-          errorPort.listen((message) {
-            ///onError
-            _processingActionList.remove(newIsolate)?.completer?.completeError(message);
-            //执行下一个事件
-            keepRunningIsolateNextAction();
-          });
-          exitPort.listen((message) {
-            // handleNextAction();
-          });
-
-          receivePort.listen((message) {
-            ///从isolate中传递过来的信息
-            if (message is SendPort) {
-              _keepRunningIsolateSendPort = message;
-              //执行下一个事件
-              keepRunningIsolateNextAction();
-            } else {
-              _processingActionList.remove(newIsolate)?.completer?.complete(message);
-              //执行下一个事件
-              keepRunningIsolateNextAction();
-            }
-          });
+      createIsolate().then((value) {
+        if (value is IsolateInfo) {
+          _keepRunningIsolateInfo = value;
         }
       });
-    }
-  }
-
-  void keepRunningIsolateNextAction() {
-    if(_keepRunningIsolateSendPort == null) return;
-    if (_penddingActionList.isNotEmpty) {
-      _Action action = reverseOrder == true ? _penddingActionList.removeLast() : _penddingActionList.removeAt(0);
-      _processingActionList[_keepRunningIsolate] = action;
-      _keepRunningIsolateSendPort.send(_MessageInfo(function: isolateFunction, value: action.message));
-      if (_pauseCapability != null) {
-        _keepRunningIsolate.resume(_pauseCapability);
-        _pauseCapability = null;
-      }
-    } else if(_pauseCapability == null){
-      _pauseCapability = _keepRunningIsolate.pause();
     }
   }
 
@@ -118,97 +77,129 @@ class IsolateManager {
     assert(message != null);
     Completer completer = Completer();
     _penddingActionList.add(_Action(message: message, completer: completer));
-    // handleNextAction();
-    keepRunningIsolateNextAction();
+    handleNextAction();
     return completer.future;
   }
 
   ///执行下一个事件
   void handleNextAction({Isolate isolate, SendPort sendPort}) {
     if (_penddingActionList.isEmpty) {
-      if (isolate != null) isolate.kill(priority: Isolate.immediate);
+      if (isolate != null) {
+        if (isolate == _keepRunningIsolateInfo.isolate) {
+          if (_pauseCapability == null) {
+            _pauseCapability = _keepRunningIsolateInfo.isolate.pause();
+          }
+        } else {
+          isolate.kill(priority: Isolate.immediate);
+        }
+      }
       return;
     }
+
+    ///优先使用_keepRunningIsolateInfo.isolate处理
+    if (_pauseCapability != null &&
+        _keepRunningIsolateInfo?.isolate != null &&
+        _keepRunningIsolateInfo?.sendPort != null) {
+      // _keepRunningIsolateInfo?.isolate处于pause状态
+      runNextAction(_keepRunningIsolateInfo.isolate, _keepRunningIsolateInfo.sendPort);
+      _keepRunningIsolateInfo.isolate.resume(_pauseCapability);
+      _pauseCapability = null;
+      return;
+    }
+
     if (isolate != null && sendPort != null) {
       ///指定执行事件的isolate
-      _Action action = reverseOrder == true ? _penddingActionList.removeLast() : _penddingActionList.removeAt(0);
-      _processingActionList[isolate] = action;
-      sendPort.send(_MessageInfo(function: isolateFunction, value: action.message));
+      runNextAction(isolate, sendPort);
     } else if (_currentIsolateCount < maxCocurrentIsolateCount) {
-      assert(() {
-        print('currentIsolateCount:$_currentIsolateCount');
-        return true;
-      }());
+      createIsolate();
+    }
+  }
 
-      ///新建Isolate
-      _currentIsolateCount++;
-      ReceivePort receivePort = ReceivePort();
-      String debugName = DateTime.now().toIso8601String();
-      Isolate.spawn(
-        _isolateMethod,
-        receivePort.sendPort,
-        errorsAreFatal: false,
-        debugName: debugName,
-      ).then((newIsolate) {
-        if (newIsolate is Isolate) {
+  void runNextAction(Isolate isolate, SendPort sendPort) {
+    assert(isolate != null && sendPort != null);
+    if (isolate == null || sendPort == null) return;
+    _Action action = reverseOrder == true ? _penddingActionList.removeLast() : _penddingActionList.removeAt(0);
+    _processingActionList[isolate] = action;
+    sendPort.send(_MessageInfo(function: isolateFunction, value: action.message));
+  }
+
+  Future<IsolateInfo> createIsolate() {
+    assert(() {
+      print('currentIsolateCount:$_currentIsolateCount');
+      return true;
+    }());
+
+    ///新建Isolate
+    _currentIsolateCount++;
+
+    ReceivePort receivePort = ReceivePort();
+    String debugName = DateTime.now().toIso8601String();
+    return Isolate.spawn(
+      _isolateMethod,
+      receivePort.sendPort,
+      errorsAreFatal: false,
+      debugName: debugName,
+    ).then((newIsolate) {
+      if (newIsolate is Isolate) {
+        assert(() {
+          print('IsolateManager create isolate:${newIsolate.debugName}');
+          return true;
+        }());
+        IsolateInfo isolateInfo = IsolateInfo(isolate: newIsolate);
+
+        ///新建Isolate成功
+        //设置error和exit监听
+        ReceivePort errorPort = ReceivePort();
+        ReceivePort exitPort = ReceivePort();
+        newIsolate.addOnExitListener(exitPort.sendPort);
+        newIsolate.addErrorListener(errorPort.sendPort);
+        errorPort.listen((message) {
           assert(() {
-            print('create isolate:${newIsolate.debugName}');
+            print('IsolateManager isolate error:${newIsolate.debugName}');
             return true;
           }());
-          SendPort isolateSendPort;
 
-          ///新建Isolate成功
-          //设置error和exit监听
-          ReceivePort errorPort = ReceivePort();
-          ReceivePort exitPort = ReceivePort();
-          newIsolate.addOnExitListener(exitPort.sendPort);
-          newIsolate.addErrorListener(errorPort.sendPort);
-          errorPort.listen((message) {
-            assert(() {
-              print('isolate error:${newIsolate.debugName}');
-              return true;
-            }());
+          ///onError
+          _processingActionList.remove(newIsolate)?.completer?.completeError(message);
+          //执行下一个事件
+          handleNextAction(isolate: newIsolate, sendPort: isolateInfo.sendPort);
+        });
+        exitPort.listen((message) {
+          assert(() {
+            //此时newIsolate.debugName获取的name为null
+            print('isolate exit:$debugName');
+            return true;
+          }());
 
-            ///onError
-            _processingActionList.remove(newIsolate)?.completer?.completeError(message);
-            //执行下一个事件
-            handleNextAction(isolate: newIsolate, sendPort: isolateSendPort);
-          });
-          exitPort.listen((message) {
-            assert(() {
-              //此时newIsolate.debugName获取的name为null
-              print('isolate exit:$debugName');
-              return true;
-            }());
-
-            ///onExit
-            _currentIsolateCount--;
-            handleNextAction();
-          });
-
-          receivePort.listen((message) {
-            ///从isolate中传递过来的信息
-            if (message is SendPort) {
-              isolateSendPort = message;
-              //执行下一个事件
-              handleNextAction(isolate: newIsolate, sendPort: isolateSendPort);
-            } else {
-              _processingActionList.remove(newIsolate)?.completer?.complete(message);
-              //执行下一个事件
-              handleNextAction(isolate: newIsolate, sendPort: isolateSendPort);
-            }
-          });
-        } else {
-          ///新建Isolate失败
+          ///onExit
           _currentIsolateCount--;
+          receivePort?.close();
           handleNextAction();
-        }
-      }).catchError((onError) {
-        ///新建失败
+        });
+
+        receivePort.listen((message) {
+          ///从isolate中传递过来的信息
+          if (message is SendPort) {
+            isolateInfo.sendPort = message;
+            //执行下一个事件
+            handleNextAction(isolate: newIsolate, sendPort: isolateInfo.sendPort);
+          } else {
+            _processingActionList.remove(newIsolate)?.completer?.complete(message);
+            //执行下一个事件
+            handleNextAction(isolate: newIsolate, sendPort: isolateInfo.sendPort);
+          }
+        });
+        return isolateInfo;
+      } else {
+        ///新建Isolate失败
         _currentIsolateCount--;
         handleNextAction();
-      });
-    }
+      }
+    }).catchError((onError) {
+      ///新建失败
+      _currentIsolateCount--;
+      handleNextAction();
+    });
   }
 
   static void _isolateMethod(SendPort sendPort) {

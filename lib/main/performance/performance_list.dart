@@ -4,6 +4,7 @@ import 'package:flutter_summary/router/router.dart';
 
 import 'widgets/delay_build_widget.dart';
 import 'widgets/not_delay_build_widget.dart';
+import 'widgets/rounded_corner_build.dart';
 import 'widgets/rounded_image_page.dart';
 
 class ListTileInfo {
@@ -26,15 +27,21 @@ class PerformanceListPage extends StatelessWidget {
           }),
       ListTileInfo(
           title: 'DelayBuildWidget',
-          subTitle: '延时构建小部件',
+          subTitle: '延时构建和图片圆角优化',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: DelayBuildWidgetTestPage()));
           }),
       ListTileInfo(
           title: 'NotDelayBuildWidget',
-          subTitle: '与DelayBuildWidget做性能对比',
+          subTitle: '普通页面，没优化的',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: NotDelayBuildWidget()));
+          }),
+      ListTileInfo(
+          title: 'just RoundedImage',
+          subTitle: '没有延时构建，只有图片圆角处理',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: RoundedCornderBuildPage()));
           }),
       ListTileInfo(
           title: 'RoundedImage',

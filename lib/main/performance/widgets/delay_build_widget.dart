@@ -3,23 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'not_delay_build_widget.dart';
 
-class GridInfo {
-  final String url;
-  final String title;
-  final String icon;
-  final String aboveIcon;
-  final String subTitle;
-  final int index;
-
-  GridInfo(
-      {@required this.index,
-      @required this.icon,
-      @required this.url,
-      @required this.title,
-      @required this.subTitle,
-      @required this.aboveIcon});
-}
-
 class DelayBuildWidgetTestPage extends NotDelayBuildWidget {
   @override
   _DelayBuildWidgetTestPageState createState() => _DelayBuildWidgetTestPageState();
@@ -28,14 +11,15 @@ class DelayBuildWidgetTestPage extends NotDelayBuildWidget {
 class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
   @override
   String get pageTitle => '延时构建小部件测试';
-  Widget item(GridInfo info) {
+
+  @override
+  Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
+    // TODO: implement item
     return DelayBuildChild(
-      placeholder: Container(
-        color: Colors.red,
-        width: 60,
-        height: 80,
-      ),
-      child: super.item(info),
+      // placeholder: Container(
+      //   color: Colors.red,
+      // ),
+      child: super.item(info, useRoundCornerImageProvider: true),
     );
   }
 }

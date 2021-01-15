@@ -4,16 +4,23 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui';
 
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image/src/image_provider/_image_provider_io.dart'
+    if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
+    as CachedNetworkImage;
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image/image.dart' as IMG;
 import 'package:flutter_summary/main/performance/widgets/round_corners_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: implementation_imports
-import 'package:flutter/src/painting/_network_image_io.dart' if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
+import 'package:flutter/src/painting/_network_image_io.dart'
+    if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
 
 import 'isolate_manager.dart';
 
-final IsolateManager _isolateManager = IsolateManager(isolateFunction: _createRoundCornerIsolateMethod, reverseOrder: true);
+final IsolateManager _isolateManager =
+    IsolateManager(isolateFunction: _createRoundCornerIsolateMethod, reverseOrder: true, keepRunning: true);
 
 enum ClipLocation {
   Start,
@@ -44,7 +51,9 @@ mixin CornerAndClipKeyMixin on AssetBundleImageKey {
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
         other.haveValidShowSize == haveValidShowSize &&
-        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
+        (haveValidShowSize
+            ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation)
+            : true);
   }
 
   @override
@@ -67,7 +76,8 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
-    final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
+    final DecoderCallback decodeRoundCorners =
+        (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
       assert(() {
         print('CornerAndClipProviderMixin load');
         return true;
@@ -97,7 +107,8 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         }
       }
       uint8List ??= bytes;
-      return decode(uint8List, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
+      return decode(uint8List,
+          cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling);
     };
     return super.load(key, decodeRoundCorners);
   }
@@ -111,7 +122,9 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
         other.haveValidShowSize == haveValidShowSize &&
-        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
+        (haveValidShowSize
+            ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation)
+            : true);
   }
 
   @override
@@ -345,8 +358,45 @@ class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAnd
   }
 }
 
+class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImageProvider
+    with CornerAndClipProviderMixin {
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final double showWidth;
+  final double showHeight;
+
+  //showWidth、showHeight设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
+  final ClipLocation clipLocation;
+
+  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果showSize为空，直接对图片设置圆角
+  final int cornerRadius;
+  //cornerRadius圆角外围部分的颜色
+  final Color cornerColor;
+  RoundCornerCachedNetworkImage(
+    String url, {
+    double scale = 1.0,
+    Map<String, String> headers,
+    BaseCacheManager cacheManager,
+    ImageRenderMethodForWeb imageRenderMethodForWeb,
+    this.cornerRadius,
+    this.cornerColor,
+    this.showHeight,
+    this.showWidth,
+    this.clipLocation = ClipLocation.Center,
+  }) : super(
+          url,
+          scale: scale,
+          headers: headers,
+          cacheManager: cacheManager,
+          imageRenderMethodForWeb: imageRenderMethodForWeb,
+        );
+}
+
 Future _createRoundCornerIsolateMethod(dynamic info) async {
-  if (info is _IsolateMessage && ((info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) || info.cornerRadius != null)) {
+  if (info is _IsolateMessage &&
+      ((info.showHeight != null && info.showHeight > 0 && info.showWidth != null && info.showWidth > 0) ||
+          info.cornerRadius != null)) {
     IMG.Image imageInfo = IMG.decodeImage(info.bytes);
     double scale;
     if (info.showHeight != null &&

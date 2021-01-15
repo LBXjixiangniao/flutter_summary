@@ -30,13 +30,21 @@ extension IMg_Extension on IMG.Image {
     _Position leftTopCenter = _Position(radius - 1, radius - 1);
     // 左下角中心点
     _Position leftBottomCenter = _Position(radius - 1, image.height - radius);
+
+    //圆弧和正方形对角线相交点的x坐标
+    double seperatedX = sqrt(radius * radius / 2);
+
     void traverseSetPixelsColor({int x, int startY}) {
-      int y = max(startY, x);
-      while (y < radius && y >= x && pow(x, 2) + pow(y, 2) < pow(radius, 2)) {
-        y++;
+      if (x >= seperatedX) {
+        startY = x;
+      } else {
+        startY = max(startY, x);
+        while (startY < radius && startY >= x && pow(x, 2) + pow(startY, 2) < pow(radius, 2)) {
+          startY++;
+        }
       }
 
-      for (int i = y; i < radius; i++) {
+      for (int i = startY; i < radius; i++) {
         int pixelX = x;
         int pixelY = i;
 
@@ -101,7 +109,7 @@ extension IMg_Extension on IMG.Image {
           );
       }
       if (x < radius) {
-        traverseSetPixelsColor(x: x + 1, startY: y - 1);
+        traverseSetPixelsColor(x: x + 1, startY: startY - 1);
       }
     }
 

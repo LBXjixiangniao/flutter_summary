@@ -8,6 +8,23 @@ import 'package:flutter_summary/util/image_helper.dart';
 
 import 'delay_build_widget.dart';
 
+class GridInfo {
+  final String url;
+  final String title;
+  final String icon;
+  final String aboveIcon;
+  final String subTitle;
+  final int index;
+
+  GridInfo(
+      {@required this.index,
+      @required this.icon,
+      @required this.url,
+      @required this.title,
+      @required this.subTitle,
+      @required this.aboveIcon});
+}
+
 class NotDelayBuildWidget extends StatefulWidget {
   @override
   NotDelayBuildWidgetState createState() => NotDelayBuildWidgetState();
@@ -102,7 +119,8 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           icon: random.nextInt(9).toString(),
           subTitle: content.substring(titleStart, titleStart + random.nextInt(4) + 1),
           title: content.substring(subTitleStart, subTitleStart + random.nextInt(4) + 1),
-          url: 'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+          url:
+              'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
         ),
       );
       i++;
@@ -134,14 +152,14 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                   Text(
                     info.title,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.red,
                     ),
                   ),
                   Image.asset(
                     ImageHelper.image('icon_${info.icon}.png'),
-                    width: 30,
+                    width: 25,
                   ),
                   Spacer(),
                   Text(
@@ -156,26 +174,43 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
     );
   }
 
-  Widget item(GridInfo info) {
+  Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
     return LayoutBuilder(
       builder: (_, constraints) {
         return Stack(
           children: [
-            Image(
-              image: RoundCornersNetworkImage(
-                info.url,
-                cornerRadius: 30,
-                cornerColor: Colors.white,
-                showWidth: constraints.maxWidth,
-                showHeight: constraints.maxHeight,
-              ),
-              fit: BoxFit.cover,
-              width: constraints.maxWidth,
-              height: constraints.maxHeight,
-            ),
+            useRoundCornerImageProvider
+                ? Image(
+                    image: ResizeImage(
+                      RoundCornersNetworkImage(
+                        info.url,
+                        cornerRadius: 30,
+                        cornerColor: Colors.red,
+                        showWidth: constraints.maxWidth,
+                        showHeight: constraints.maxHeight,
+                      ),
+                      width: constraints.maxWidth.toInt() * 2,
+                      height:constraints.maxHeight.toInt() * 2,
+                    ),
+                    fit: BoxFit.cover,
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(30),
+                    child: Image.network(
+                     info.url,
+                      fit: BoxFit.cover,
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      cacheWidth: constraints.maxWidth.toInt() * 2,
+                      cacheHeight:constraints.maxHeight.toInt() * 2,
+                    ),
+                  ),
             Column(
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Container(
                       decoration: BoxDecoration(
@@ -199,11 +234,28 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                     ),
                   ],
                 ),
-                Image.asset(
-                  ImageHelper.image(
-                    'icon_a_${info.aboveIcon}.png',
-                  ),
-                  width: 35,
+                Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: Colors.red,
+                        ),
+                      ),
+                      child: Text(
+                        info.subTitle + info.subTitle,
+                        style: TextStyle(fontSize: 13, color: Colors.blue[100]),
+                      ),
+                    ),
+                    Image.asset(
+                      ImageHelper.image(
+                        'icon_a_${info.aboveIcon}.png',
+                      ),
+                      width: 35,
+                    ),
+                  ],
                 ),
                 Row(
                   children: [
@@ -211,11 +263,11 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                       children: [
                         Text(
                           info.title,
-                          style: TextStyle(fontSize: 16, color: Colors.green),
+                          style: TextStyle(fontSize: 12, color: Colors.green),
                         ),
                         Text(
                           info.title,
-                          style: TextStyle(fontSize: 16, color: Colors.purple),
+                          style: TextStyle(fontSize: 12, color: Colors.purple),
                         ),
                       ],
                     ),
@@ -243,20 +295,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                 ),
                 Text(
                   info.subTitle + info.title,
-                  style: TextStyle(fontSize: 18, color: Colors.yellow[100]),
-                ),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(4),
-                    border: Border.all(
-                      color: Colors.red,
-                    ),
-                  ),
-                  child: Text(
-                    info.subTitle + info.title + info.subTitle,
-                    style: TextStyle(fontSize: 13, color: Colors.blue[100]),
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.yellow[100]),
                 ),
               ],
             ),
@@ -270,6 +309,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: ColorHelper.BGColor,
       appBar: AppBar(
         title: Text(pageTitle),
         actions: [
