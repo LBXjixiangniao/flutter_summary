@@ -16,13 +16,7 @@ class GridInfo {
   final String subTitle;
   final int index;
 
-  GridInfo(
-      {@required this.index,
-      @required this.icon,
-      @required this.url,
-      @required this.title,
-      @required this.subTitle,
-      @required this.aboveIcon});
+  GridInfo({@required this.index, @required this.icon, @required this.url, @required this.title, @required this.subTitle, @required this.aboveIcon});
 }
 
 class NotDelayBuildWidget extends StatefulWidget {
@@ -119,8 +113,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           icon: random.nextInt(9).toString(),
           subTitle: content.substring(titleStart, titleStart + random.nextInt(4) + 1),
           title: content.substring(subTitleStart, subTitleStart + random.nextInt(4) + 1),
-          url:
-              'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+          url: 'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
         ),
       );
       i++;
@@ -145,7 +138,15 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
             children: [
               Expanded(
                 // child: SizedBox(),
-                child: childBuilder(info),
+                child: LayoutBuilder(
+                  builder: (_, constraints) {
+                    return Container(
+                      width: constraints.maxWidth,
+                      height: constraints.maxHeight,
+                      child: childBuilder(info),
+                    );
+                  },
+                ),
               ),
               Row(
                 children: [
@@ -179,34 +180,35 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
       builder: (_, constraints) {
         return Stack(
           children: [
-            useRoundCornerImageProvider
-                ? Image(
-                    image: ResizeImage(
-                      RoundCornersNetworkImage(
-                        info.url,
-                        cornerRadius: 30,
-                        cornerColor: Colors.red,
-                        showWidth: constraints.maxWidth,
-                        showHeight: constraints.maxHeight,
-                      ),
-                      width: constraints.maxWidth.toInt() * 2,
-                      height:constraints.maxHeight.toInt() * 2,
-                    ),
-                    fit: BoxFit.cover,
-                    width: constraints.maxWidth,
-                    height: constraints.maxHeight,
-                  )
-                : ClipRRect(
-                    borderRadius: BorderRadius.circular(30),
-                    child: Image.network(
-                     info.url,
-                      fit: BoxFit.cover,
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                      cacheWidth: constraints.maxWidth.toInt() * 2,
-                      cacheHeight:constraints.maxHeight.toInt() * 2,
-                    ),
-                  ),
+            // useRoundCornerImageProvider
+            //     ? Image(
+            //         image: ResizeImage(
+            //           RoundCornersNetworkImage(
+            //             info.url,
+            //             cornerRadius: 30,
+            //             cornerColor: Colors.red,
+            //             showWidth: constraints.maxWidth,
+            //             showHeight: constraints.maxHeight,
+            //           ),
+            //           width: constraints.maxWidth.toInt() * 2,
+            //           height:constraints.maxHeight.toInt() * 2,
+            //         ),
+            //         fit: BoxFit.cover,
+            //         width: constraints.maxWidth,
+            //         height: constraints.maxHeight,
+            //       )
+            //     : ClipRRect(
+            //         borderRadius: BorderRadius.circular(30),
+            //         child: Image.network(
+            //          info.url,
+            //           fit: BoxFit.cover,
+            //           width: constraints.maxWidth,
+            //           height: constraints.maxHeight,
+            //           cacheWidth: constraints.maxWidth.toInt() * 2,
+            //           cacheHeight:constraints.maxHeight.toInt() * 2,
+            //         ),
+            //       ),
+
             Column(
               children: [
                 Row(

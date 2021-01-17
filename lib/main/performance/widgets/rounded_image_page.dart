@@ -6,6 +6,7 @@ import 'package:flutter_summary/main/performance/widgets/round_corners_image_pro
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/util/image_helper.dart';
 
+import 'delay_build_widget.dart';
 import 'isolate_manager.dart';
 
 class RoundedImagePage extends StatefulWidget {
@@ -19,6 +20,13 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
   double height = 190;
   bool showWidth = true;
   ClipLocation location = ClipLocation.End;
+  DelayBuildManager manager;
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    manager = DelayBuildManager();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,6 +58,15 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Container(
+              width: 100,
+              height: 100,
+              color: Colors.red,
+              child: DelayBuildChild(
+                buildManager: manager,
+                child: Text('hello'),
+              ),
+            ),
             // FlatButton(
             //   onPressed: () {
             //     setState(() {
@@ -127,19 +144,19 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
                 ImageHelper.image('icon_round_corners.png'),
               ),
             ),
-            LayoutBuilder(builder: (_, constraints) {
-              return Image(
-                image: RoundCornersNetworkImage(
-                  // ImageHelper.image('icon_round_corners.png'),
-                  'https://images.pexels.com/photos/6032603/pexels-photo-6032603.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
-                  cornerRadius: radius,
-                  cornerColor: color,
-                  showWidth: showWidth ? constraints.maxWidth : null,
-                  showHeight: height,
-                  clipLocation: location,
-                ),
-              );
-            }),
+            // LayoutBuilder(builder: (_, constraints) {
+            //   return Image(
+            //     image: RoundCornersNetworkImage(
+            //       // ImageHelper.image('icon_round_corners.png'),
+            //       'https://images.pexels.com/photos/6032603/pexels-photo-6032603.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+            //       cornerRadius: radius,
+            //       cornerColor: color,
+            //       showWidth: showWidth ? constraints.maxWidth : null,
+            //       showHeight: height,
+            //       clipLocation: location,
+            //     ),
+            //   );
+            // }),
           ],
         ),
       ),
