@@ -16,7 +16,13 @@ class GridInfo {
   final String subTitle;
   final int index;
 
-  GridInfo({@required this.index, @required this.icon, @required this.url, @required this.title, @required this.subTitle, @required this.aboveIcon});
+  GridInfo(
+      {@required this.index,
+      @required this.icon,
+      @required this.url,
+      @required this.title,
+      @required this.subTitle,
+      @required this.aboveIcon});
 }
 
 class NotDelayBuildWidget extends StatefulWidget {
@@ -113,14 +119,19 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           icon: random.nextInt(9).toString(),
           subTitle: content.substring(titleStart, titleStart + random.nextInt(4) + 1),
           title: content.substring(subTitleStart, subTitleStart + random.nextInt(4) + 1),
-          url: 'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+          url:
+              'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
         ),
       );
       i++;
     });
   }
 
-  Widget pageBuild({ScrollController controller, Widget childBuilder(GridInfo info)}) {
+  Widget pageBuild(
+      {ScrollController controller,
+      Widget childBuilder(
+        GridInfo info,
+      )}) {
     return GridView.builder(
       controller: controller,
       itemCount: dataList.length,
@@ -134,176 +145,166 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
         GridInfo info = dataList[index];
         return Padding(
           padding: const EdgeInsets.all(4),
-          child: Column(
-            children: [
-              Expanded(
-                // child: SizedBox(),
-                child: LayoutBuilder(
-                  builder: (_, constraints) {
-                    return Container(
-                      width: constraints.maxWidth,
-                      height: constraints.maxHeight,
-                      child: childBuilder(info),
-                    );
-                  },
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    info.title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.red,
-                    ),
-                  ),
-                  Image.asset(
-                    ImageHelper.image('icon_${info.icon}.png'),
-                    width: 25,
-                  ),
-                  Spacer(),
-                  Text(
-                    info.subTitle,
-                  ),
-                ],
-              ),
-            ],
-          ),
+          child: childBuilder(info),
         );
       },
     );
   }
 
   Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        return Stack(
-          children: [
-            // useRoundCornerImageProvider
-            //     ? Image(
-            //         image: ResizeImage(
-            //           RoundCornersNetworkImage(
-            //             info.url,
-            //             cornerRadius: 30,
-            //             cornerColor: Colors.red,
-            //             showWidth: constraints.maxWidth,
-            //             showHeight: constraints.maxHeight,
-            //           ),
-            //           width: constraints.maxWidth.toInt() * 2,
-            //           height:constraints.maxHeight.toInt() * 2,
-            //         ),
-            //         fit: BoxFit.cover,
-            //         width: constraints.maxWidth,
-            //         height: constraints.maxHeight,
-            //       )
-            //     : ClipRRect(
-            //         borderRadius: BorderRadius.circular(30),
-            //         child: Image.network(
-            //          info.url,
-            //           fit: BoxFit.cover,
-            //           width: constraints.maxWidth,
-            //           height: constraints.maxHeight,
-            //           cacheWidth: constraints.maxWidth.toInt() * 2,
-            //           cacheHeight:constraints.maxHeight.toInt() * 2,
-            //         ),
-            //       ),
+    return Column(
+      children: [
+        Expanded(
+          // child: SizedBox(),
+          child: Stack(
+            children: [
+              // useRoundCornerImageProvider
+              //     ?
+              // Image(
+              //         image: ResizeImage(
+              //           RoundCornersNetworkImage(
+              //             info.url,
+              //             cornerRadius: 30,
+              //             cornerColor: Colors.red,
+              //             showWidth: constraints.maxWidth,
+              //             showHeight: constraints.maxHeight,
+              //           ),
+              //           width: constraints.maxWidth.toInt() * 2,
+              //           height:constraints.maxHeight.toInt() * 2,
+              //         ),
+              //         fit: BoxFit.cover,
+              //         width: constraints.maxWidth,
+              //         height: constraints.maxHeight,
+              // )
+              // :
+              ClipRRect(
+                borderRadius: BorderRadius.circular(30),
+                child: Image.network(
+                  info.url,
+                  fit: BoxFit.cover,
+                  // width: width,
+                  // height: height,
+                  // cacheWidth: width.toInt() * 2,
+                  // cacheHeight: height.toInt() * 2,
+                ),
+              ),
 
-            Column(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.red[100],
-                        borderRadius: BorderRadius.circular(4),
-                        boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
-                      ),
-                      child: Text(
-                        info.title + info.subTitle,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: ColorHelper.Black153,
+              Column(
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.red[100],
+                          borderRadius: BorderRadius.circular(4),
+                          boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
+                        ),
+                        child: Text(
+                          info.title + info.subTitle,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: ColorHelper.Black153,
+                          ),
                         ),
                       ),
-                    ),
-                    CircleAvatar(
-                      backgroundColor: Colors.yellow.withOpacity(0.5),
-                      child: Text(
-                        info.index.toString(),
-                      ),
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.red,
+                      CircleAvatar(
+                        backgroundColor: Colors.yellow.withOpacity(0.5),
+                        child: Text(
+                          info.index.toString(),
                         ),
                       ),
-                      child: Text(
-                        info.subTitle + info.subTitle,
-                        style: TextStyle(fontSize: 13, color: Colors.blue[100]),
-                      ),
-                    ),
-                    Image.asset(
-                      ImageHelper.image(
-                        'icon_a_${info.aboveIcon}.png',
-                      ),
-                      width: 35,
-                    ),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          info.title,
-                          style: TextStyle(fontSize: 12, color: Colors.green),
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.red,
+                          ),
                         ),
-                        Text(
-                          info.title,
-                          style: TextStyle(fontSize: 12, color: Colors.purple),
-                        ),
-                      ],
-                    ),
-                    Text(
-                      info.subTitle,
-                      style: TextStyle(fontSize: 14, color: Colors.black12),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(
-                          color: Colors.red,
+                        child: Text(
+                          info.subTitle + info.subTitle,
+                          style: TextStyle(fontSize: 13, color: Colors.blue[100]),
                         ),
                       ),
-                      child: Image.asset(
+                      Image.asset(
                         ImageHelper.image(
                           'icon_a_${info.aboveIcon}.png',
                         ),
-                        width: 20,
+                        width: 35,
                       ),
-                    ),
-                  ],
-                ),
-                Text(
-                  info.subTitle + info.title,
-                  style: TextStyle(fontSize: 12, color: Colors.yellow[100]),
-                ),
-              ],
+                    ],
+                  ),
+                  Row(
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            info.title,
+                            style: TextStyle(fontSize: 12, color: Colors.green),
+                          ),
+                          Text(
+                            info.title,
+                            style: TextStyle(fontSize: 12, color: Colors.purple),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        info.subTitle,
+                        style: TextStyle(fontSize: 14, color: Colors.black12),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.red,
+                          ),
+                        ),
+                        child: Image.asset(
+                          ImageHelper.image(
+                            'icon_a_${info.aboveIcon}.png',
+                          ),
+                          width: 20,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Text(
+                    info.subTitle + info.title,
+                    style: TextStyle(fontSize: 12, color: Colors.yellow[100]),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        Row(
+          children: [
+            Text(
+              info.title,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            Image.asset(
+              ImageHelper.image('icon_${info.icon}.png'),
+              width: 25,
+            ),
+            Spacer(),
+            Text(
+              info.subTitle,
             ),
           ],
-        );
-      },
+        ),
+      ],
     );
   }
 

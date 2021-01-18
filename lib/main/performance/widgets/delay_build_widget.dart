@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
-import 'package:oktoast/oktoast.dart';
 import 'not_delay_build_widget.dart';
 
 class DelayBuildWidgetTestPage extends NotDelayBuildWidget {
@@ -17,91 +16,24 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
   DelayBuildManager manager;
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     manager = DelayBuildManager();
   }
 
   @override
   Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
-    // TODO: implement item
-    return DelayBuildChild(
-      // placeholder: Container(
-      //   color: Colors.red,
-      // ),
-      buildManager: manager,
-      index: info.index,
-
-      child: super.item(info, useRoundCornerImageProvider: true),
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        return DelayBuildChild(
+          buildManager: manager,
+          width: constraints.maxWidth,
+          height: constraints.maxHeight,
+          child: super.item(info, useRoundCornerImageProvider: true),
+        );
+      },
     );
   }
 }
-
-/**
- * DelayBuildChild的child会延时build
- * placeholder：child还没build的时候显示
- * buildManager：用于管理延时build，不传递该参数就使用默认的_delayBuildManager管理
- */
-// class DelayBuildChild extends StatefulWidget {
-//   final int index;
-//   final Widget child;
-//   final Widget placeholder;
-//   final DelayBuildManager buildManager;
-//   DelayBuildChild({Key key, this.child, this.placeholder, this.buildManager,this.index}) : super(key: key);
-
-//   @override
-//   _DelayBuildChildState createState() => _DelayBuildChildState();
-// }
-
-// class _DelayBuildChildState extends State<DelayBuildChild> {
-//   bool canBuild = false;
-//   BuildInfo info;
-//   DelayBuildManager buildManager;
-
-//   @override
-//   void dispose() {
-//     super.dispose();
-//     info.valid = false;
-//   }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     print('============initState ${widget.index}');
-//     createInfoAndAddToBuildStack();
-//   }
-
-//   @override
-//   void didUpdateWidget(covariant DelayBuildChild oldWidget) {
-//     super.didUpdateWidget(oldWidget);
-//     info.valid = false;
-//     canBuild = false;
-//     createInfoAndAddToBuildStack();
-//   }
-
-//   void createInfoAndAddToBuildStack() {
-//     info = BuildInfo(
-//       rebuild: () {
-//         if (mounted) {
-//           setState(() {
-//             canBuild = true;
-//           });
-//         }
-//       },
-//     );
-//     buildManager = widget.buildManager ?? _delayBuildManager;
-//     buildManager._add(info);
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     AnimatedOpacity
-//     return BuildControlWidget(
-//       child: widget.child,
-//       canBuild: canBuild,
-//     );
-//   }
-// }
 
 enum _BuildStatus {
   idle,
@@ -109,93 +41,145 @@ enum _BuildStatus {
   paint,
 }
 
-class DelayBuildChild extends SingleChildRenderObjectWidget {
-  int index;
+class DelayBuildChild extends StatelessWidget {
   final DelayBuildManager buildManager;
-  final bool canBuild;
-  DelayBuildChild({Key key, Widget child, this.canBuild, this.index, this.buildManager}) : super(key: key, child: child);
+  final double width;
+  final double height;
+  final bool addRepaintBoundary;
+  final Widget child;
+  DelayBuildChild({
+    Key key,
+    this.child,
+    this.buildManager,
+    @required this.width,
+    @required this.height,
+    this.addRepaintBoundary = true,
+  })  : assert(width != null && height != null),
+        super(key: key);
 
   @override
-  BuildControlRenderObject createRenderObject(BuildContext context) {
-    return BuildControlRenderObject(index: index, buildManager: buildManager);
-  }
-
-  @override
-  void updateRenderObject(BuildContext context, covariant BuildControlRenderObject renderObject) {
-    renderObject.index = index;
-    renderObject.buildManager = buildManager;
-  }
-
-  @override
-  SingleChildRenderObjectElement createElement() {
-    return super.createElement();
+  Widget build(BuildContext context) {
+    Widget buildControlChild = _BuildControlChild(
+      key: key,
+      child: child,
+      width: width,
+      height: height,
+    );
+    if (addRepaintBoundary == true) {
+      buildControlChild = RepaintBoundary(
+        child: buildControlChild,
+      );
+    }
+    return buildControlChild;
   }
 }
 
-class BuildControlRenderObject extends RenderProxyBox {
-  int index;
-  BuildInfo info;
-  DelayBuildManager buildManager;
-  BuildControlRenderObject({this.index, this.buildManager}) {
-    info = BuildInfo(markNeedsLayout: (){
-      super.markNeedsLayout();
-      // super.performLayout();
-    }, markNeedsPaint: super.markNeedsPaint);
+class _BuildControlChild extends SingleChildRenderObjectWidget {
+  final DelayBuildManager buildManager;
+  final double width;
+  final double height;
+  _BuildControlChild({
+    Key key,
+    Widget child,
+    this.buildManager,
+    this.width,
+    this.height,
+  }) : super(key: key, child: child);
+
+  @override
+  _BuildControlRenderObject createRenderObject(BuildContext context) {
+    return _BuildControlRenderObject(
+      buildManager: buildManager,
+      width: width,
+      height: height,
+    );
   }
 
-  // @override
-  // Size get size => (info.currentStatus == _BuildStatus.idle && !hasSize) ? Size(100,100) : super.size;
+  @override
+  void updateRenderObject(BuildContext context, covariant _BuildControlRenderObject renderObject) {
+    renderObject.buildManager = buildManager;
+    renderObject.width = width;
+    renderObject.height = height;
+  }
+
+  @override
+  void didUnmountRenderObject(covariant _BuildControlRenderObject renderObject) {
+    renderObject.info.tryUnlink();
+    super.didUnmountRenderObject(renderObject);
+  }
+}
+
+class _BuildControlRenderObject extends RenderProxyBox {
+  BuildInfo info;
+  DelayBuildManager buildManager;
+  double width;
+  double height;
+  _BuildControlRenderObject({
+    this.buildManager,
+    this.width,
+    this.height,
+  }) {
+    info = BuildInfo(markNeedsLayout: () {
+      if (this.attached) {
+        super.markNeedsLayout();
+      }
+    }, markNeedsPaint: () {
+      if (this.attached) {
+        super.markNeedsPaint();
+      }
+    });
+  }
+
+  @override
+  Size get size => Size(width, height);
+
+  @override
+  void detach() {
+    info.tryUnlink();
+    super.detach();
+  }
 
   @override
   void markNeedsLayout() {
-    print('markNeedsLayout $index ${info.currentStatus}');
     if (info.currentStatus != _BuildStatus.layout) {
       info.nextStatus = _BuildStatus.layout;
       addBuildInfoToManager();
     }
-    // super.markNeedsLayout();
   }
 
   @override
   void performLayout() {
-    print('performLayout $index ${info.currentStatus}');
     if (info.currentStatus == _BuildStatus.layout) {
       super.performLayout();
-    }
-     else {
+    } else {
       performResize();
     }
   }
 
   // @override
-  // void layout(Constraints constraints, {bool parentUsesSize = false}) {
-  //   print('layout $index ${info.currentStatus}');
-  //   if (info.currentStatus == _BuildStatus.layout) {
-  //     super.layout(constraints, parentUsesSize: parentUsesSize);
-  //   }
-  // }
+  void layout(Constraints constraints, {bool parentUsesSize = false}) {
+    super.layout(BoxConstraints.tight(Size(width, height)), parentUsesSize: false);
+  }
 
   @override
   void markNeedsPaint() {
-    print('markNeedsPaint $index ${info.currentStatus}');
     if (info.currentStatus == _BuildStatus.idle && info.nextStatus == _BuildStatus.idle) {
       info.nextStatus = _BuildStatus.paint;
       addBuildInfoToManager();
     }
-    // super.markNeedsPaint();
   }
 
   @override
   void paint(PaintingContext context, Offset offset) {
-    print('paint $index ${info.currentStatus}');
-    if (info.currentStatus == _BuildStatus.paint) {
+    if (info.list == null || info.currentStatus == _BuildStatus.paint) {
       super.paint(context, offset);
     }
   }
 
   void addBuildInfoToManager() {
-    info.tryUnlink();
-    (buildManager ?? _delayBuildManager)._add(info);
+    if (info.list == null) {
+      (buildManager ?? _delayBuildManager)._add(info);
+    }
   }
 }
 
@@ -213,7 +197,6 @@ class DelayBuildManager {
     if (!_isRunning) {
       _isRunning = true;
       ServicesBinding.instance.addPostFrameCallback((_) {
-        print('frame callback');
         _actionNext();
       });
     }
@@ -231,16 +214,13 @@ class DelayBuildManager {
         if (info.nextStatus == _BuildStatus.layout) {
           info.currentStatus = _BuildStatus.layout;
           info.nextStatus = _BuildStatus.paint;
-          print('markNeedsLayout');
           info.markNeedsLayout();
         } else if (info.nextStatus == _BuildStatus.paint) {
           info.currentStatus = _BuildStatus.paint;
           info.nextStatus = _BuildStatus.idle;
-          print('markNeedsPaint');
           info.markNeedsPaint();
         }
         ServicesBinding.instance.addPostFrameCallback((_) {
-          print('frame callback');
           _actionNext();
         });
       }

@@ -13,6 +13,6 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
 
   @override
   Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
-    return super.item(info,useRoundCornerImageProvider:true);
+    return super.item(info, useRoundCornerImageProvider: true);
   }
 }

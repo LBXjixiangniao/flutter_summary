@@ -58,14 +58,12 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
+            Container(width: 100, height: 100, color: Colors.red),
+            DelayBuildChild(
               width: 100,
               height: 100,
-              color: Colors.red,
-              child: DelayBuildChild(
-                buildManager: manager,
-                child: Text('hello'),
-              ),
+              buildManager: manager,
+              child: Text('hello'),
             ),
             // FlatButton(
             //   onPressed: () {
