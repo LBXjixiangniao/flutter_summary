@@ -79,58 +79,55 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
+    assert(cornerRadius != null && cornerRadius > 1);
     final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
       assert(() {
         print('CornerAndClipProviderMixin load');
         return true;
       }());
+      int imageWidth;
+      int imageHeight;
+      bool customCacheSize = this.cacheImageWidth != null || this.cacheImageHeight != null;
 
-      Uint8List uint8List;
-      if (cacheImageWidth != null || cacheImageHeight != null) {
-        uint8List = await decode(bytes, cacheWidth: cacheImageWidth, cacheHeight: cacheImageHeight, allowUpscaling: false).then((value) async {
-          var image = (await value.getNextFrame().catchError((onError) => null))?.image;
-          if (image is ui.Image) {
-            return (await image.toByteData().catchError((onError) => null))?.buffer?.asUint8List();
-          }
-          return null;
-        }).catchError(
-          (onError) => null,
-        );
-      }
-      bool isRawData = uint8List != null;
-      uint8List ??= bytes;
+      Uint8List uint8List = await decode(
+        bytes,
+        cacheWidth: customCacheSize ? this.cacheImageWidth : cacheWidth,
+        cacheHeight: customCacheSize ? this.cacheImageHeight : cacheHeight,
+        allowUpscaling: false,
+      ).then((value) async {
+        var image = (await value.getNextFrame().catchError((onError) => null))?.image;
+        if (image is ui.Image) {
+          imageWidth = image.width;
+          imageHeight = image.height;
+          return (await image.toByteData().catchError((onError) => null))?.buffer?.asUint8List();
+        }
+        return null;
+      }).catchError(
+        (onError) => null,
+      );
+      if (uint8List == null) return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
       // print('start ${DateTime.now().toIso8601String()}');
       // print('decode end ${DateTime.now().toIso8601String()}===${uint8List.length}');
 
-      // Uint8List uint8List;
-      if (cornerRadius != null && cornerRadius > 1) {
-        var tmpUint8List = await _isolateManager
-            .send(
-              _IsolateMessage(
-                bytes: uint8List,
-                isRawData: isRawData,
-                cornerRadius: cornerRadius,
-                color: cornerColor,
-                showSize: _imageShowSize,
-                clipLocation: clipLocation,
-              ),
-            )
-            .catchError((onError) => null);
-        if (tmpUint8List is Uint8List) {
-          isRawData = true;
-          uint8List = tmpUint8List;
-        }
-      }
-      if (isRawData) {
-        return _decodeImageFromPixels(uint8List, 200, 250, ui.PixelFormat.rgba8888);
+      var result = await _isolateManager
+          .send(
+            _IsolateMessage(
+              bytes: uint8List,
+              cornerRadius: cornerRadius,
+              color: cornerColor,
+              showSize: _imageShowSize,
+              clipLocation: clipLocation,
+            ),
+          )
+          .catchError((onError) => null);
+      if (result is _IsolateResult) {
+        return _decodeImageFromPixels(result.bytes, result.width, result.height, ui.PixelFormat.rgba8888);
       } else {
-        return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
+        return _decodeImageFromPixels(uint8List, imageWidth, imageHeight, ui.PixelFormat.rgba8888);
       }
     };
     return super.load(key, decodeRoundCorners);
   }
-
-  bool get haveValidShowSize => showWidth != null && showHeight != null;
 
   @override
   bool operator ==(Object other) {
@@ -138,12 +135,12 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
-        other.haveValidShowSize == haveValidShowSize &&
-        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
+        other.cacheImageWidth == cacheImageWidth &&
+        other.cacheImageHeight == cacheImageHeight;
   }
 
   @override
-  int get hashCode => hashValues(super.hashCode, cornerRadius, haveValidShowSize);
+  int get hashCode => hashValues(super.hashCode, cornerRadius, cacheImageWidth, cacheImageHeight);
 }
 
 class RoundCornersImageProvider {
@@ -411,7 +408,7 @@ Future _createRoundCornerIsolateMethod(dynamic info) async {
   if (info is _IsolateMessage) {
     IMG.Image imageInfo = IMG.decodeImage(info.bytes);
     double scale;
-    if (info.showSize != null && info.showSize.width != null && info.showSize.height != null){
+    if (info.showSize != null && info.showSize.width != null && info.showSize.height != null) {
       scale = min(imageInfo.height / info.showHeight, imageInfo.width / info.showWidth);
       int targetHeight = (info.showHeight * scale).toInt();
       int targetWidth = (info.showWidth * scale).toInt();
@@ -476,7 +473,6 @@ Future<Codec> _decodeImageFromPixels(Uint8List pixels, int width, int height, Pi
 
 class _IsolateMessage {
   final Uint8List bytes;
-  final bool isRawData;
   final int cornerRadius;
   final Color color;
 
@@ -487,10 +483,17 @@ class _IsolateMessage {
 
   _IsolateMessage({
     @required this.bytes,
-    @required this.isRawData,
     this.cornerRadius,
     this.color,
     this.showSize,
     this.clipLocation,
-  }) : assert(bytes != null && isRawData != null);
+  }) : assert(bytes != null);
+}
+
+class _IsolateResult {
+  final Uint8List bytes;
+  final int width;
+  final int height;
+
+  _IsolateResult({@required this.bytes, @required this.width, @required this.height}) : assert(bytes != null && width != null && height != null);
 }
