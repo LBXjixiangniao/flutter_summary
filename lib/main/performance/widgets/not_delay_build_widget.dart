@@ -1,12 +1,9 @@
-import 'dart:collection';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/performance/widgets/round_corners_image_provider.dart';
 import 'package:flutter_summary/styles/color_helper.dart';
 import 'package:flutter_summary/util/image_helper.dart';
-
-import 'delay_build_widget.dart';
 
 class GridInfo {
   final String url;
@@ -33,6 +30,8 @@ class NotDelayBuildWidget extends StatefulWidget {
 class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
   List<GridInfo> dataList = [];
   ScrollController _firstScrollController = ScrollController();
+  double itemWidth = 0;
+  double itemHeight = 0;
   List<String> imageUrls = [
     '2774198',
     '6194942',
@@ -120,7 +119,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           subTitle: content.substring(titleStart, titleStart + random.nextInt(4) + 1),
           title: content.substring(subTitleStart, subTitleStart + random.nextInt(4) + 1),
           url:
-              'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+              'https://images.pexels.com/photos/$element/pexels-photo-$element.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=200',
         ),
       );
       i++;
@@ -141,6 +140,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
         mainAxisSpacing: 0,
         childAspectRatio: 0.8,
       ),
+      clipBehavior: Clip.none,
       itemBuilder: (_, index) {
         GridInfo info = dataList[index];
         return Padding(
@@ -155,40 +155,33 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
     return Column(
       children: [
         Expanded(
-          // child: SizedBox(),
           child: Stack(
             children: [
-              // useRoundCornerImageProvider
-              //     ?
-              // Image(
-              //         image: ResizeImage(
-              //           RoundCornersNetworkImage(
-              //             info.url,
-              //             cornerRadius: 30,
-              //             cornerColor: Colors.red,
-              //             showWidth: constraints.maxWidth,
-              //             showHeight: constraints.maxHeight,
-              //           ),
-              //           width: constraints.maxWidth.toInt() * 2,
-              //           height:constraints.maxHeight.toInt() * 2,
-              //         ),
-              //         fit: BoxFit.cover,
-              //         width: constraints.maxWidth,
-              //         height: constraints.maxHeight,
-              // )
-              // :
-              ClipRRect(
-                borderRadius: BorderRadius.circular(30),
-                child: Image.network(
-                  info.url,
-                  fit: BoxFit.cover,
-                  // width: width,
-                  // height: height,
-                  // cacheWidth: width.toInt() * 2,
-                  // cacheHeight: height.toInt() * 2,
-                ),
-              ),
-
+              useRoundCornerImageProvider
+                  ? Image(
+                      image: RoundCornersNetworkImage(
+                        info.url,
+                        cornerRadius: 30,
+                        cornerColor: ColorHelper.BGColor,
+                        imageShowSize: Size(itemWidth, itemHeight - 30),
+                        cacheImageWidth: itemWidth.toInt() * 2,
+                        cacheImageHeight: (itemHeight - 30).toInt() * 2,
+                      ),
+                      fit: BoxFit.cover,
+                      width: itemWidth,
+                      height: itemHeight - 30,
+                    )
+                  : ClipRRect(
+                      borderRadius: BorderRadius.circular(30),
+                      child: Image.network(
+                        info.url,
+                        fit: BoxFit.cover,
+                        width: itemWidth,
+                        height: itemHeight,
+                        cacheWidth: itemWidth.toInt() * 2,
+                        cacheHeight: (itemHeight - 30).toInt() * 2,
+                      ),
+                    ),
               Column(
                 children: [
                   Row(
@@ -284,25 +277,28 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
             ],
           ),
         ),
-        Row(
-          children: [
-            Text(
-              info.title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Colors.red,
+        SizedBox(
+          height: 30,
+          child: Row(
+            children: [
+              Text(
+                info.title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
               ),
-            ),
-            Image.asset(
-              ImageHelper.image('icon_${info.icon}.png'),
-              width: 25,
-            ),
-            Spacer(),
-            Text(
-              info.subTitle,
-            ),
-          ],
+              Image.asset(
+                ImageHelper.image('icon_${info.icon}.png'),
+                width: 25,
+              ),
+              Spacer(),
+              Text(
+                info.subTitle,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -311,6 +307,8 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
   String get pageTitle => '非延时构建小部件测试';
   @override
   Widget build(BuildContext context) {
+    itemWidth = MediaQuery.of(context).size.width / 2 - 8;
+    itemHeight = itemWidth / 0.8;
     return Scaffold(
       backgroundColor: ColorHelper.BGColor,
       appBar: AppBar(
@@ -319,7 +317,7 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
           FlatButton(
             onPressed: () {
               // setState(() {
-
+              //   PaintingBinding.instance.imageCache.clear();
               // });
               ScrollController scrollController = _firstScrollController;
               if (scrollController.offset > 100) {

@@ -53,110 +53,29 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 0, horizontal: 100),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 100, height: 100, color: Colors.red),
-            DelayBuildChild(
-              width: 100,
-              height: 100,
-              buildManager: manager,
-              child: Text('hello'),
+      body: Wrap(
+        children: [
+          for (var i = 0; i < 30; i++)
+            // Image(
+            //   image: RoundCornersAssetImage(
+            //     ImageHelper.image('icon_round_corners.png'),
+            //     // 'https://images.pexels.com/photos/6032603/pexels-photo-6032603.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
+            //     cornerRadius: radius,
+            //     cornerColor: color,
+            //     imageShowSize: Size(60, 60),
+            //   ),
+            //   width: 60,
+            //   height: 60,
+            // ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(radius.toDouble()),
+            child: Image.asset(
+              ImageHelper.image('icon_round_corners.png'),
+              width: 60,
+              height: 60,
             ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       radius++;
-            //     });
-            //   },
-            //   child: Text('cornerRadius add'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       radius--;
-            //     });
-            //   },
-            //   child: Text('cornerRadius delete'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       height ??= 190;
-            //       height++;
-            //     });
-            //   },
-            //   child: Text('height add'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       height ??= 190;
-            //       height--;
-            //     });
-            //   },
-            //   child: Text('height delete'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       height = null;
-            //     });
-            //   },
-            //   child: Text('height null'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       showWidth = !showWidth;
-            //     });
-            //   },
-            //   child: Text(showWidth ? 'hide width' : 'show width'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       if (location == ClipLocation.End) {
-            //         location = ClipLocation.Start;
-            //       } else {
-            //         location = ClipLocation.End;
-            //       }
-            //     });
-            //   },
-            //   child: Text('$location'),
-            // ),
-            // FlatButton(
-            //   onPressed: () {
-            //     setState(() {
-            //       Random random = Random();
-            //       color = Color.fromRGBO(random.nextInt(255), random.nextInt(255), random.nextInt(255), 255);
-            //     });
-            //   },
-            //   child: Text('change color'),
-            // ),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(radius.toDouble()),
-              child: Image.asset(
-                ImageHelper.image('icon_round_corners.png'),
-              ),
-            ),
-            // LayoutBuilder(builder: (_, constraints) {
-            //   return Image(
-            //     image: RoundCornersNetworkImage(
-            //       // ImageHelper.image('icon_round_corners.png'),
-            //       'https://images.pexels.com/photos/6032603/pexels-photo-6032603.jpeg?auto=compress&cs=tinysrgb&dpr=2&w=500',
-            //       cornerRadius: radius,
-            //       cornerColor: color,
-            //       showWidth: showWidth ? constraints.maxWidth : null,
-            //       showHeight: height,
-            //       clipLocation: location,
-            //     ),
-            //   );
-            // }),
-          ],
-        ),
+          )
+        ],
       ),
     );
   }

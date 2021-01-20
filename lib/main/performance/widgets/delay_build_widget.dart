@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:collection';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -190,8 +191,10 @@ class DelayBuildManager {
   bool _isRunning = false;
 
   bool get isRunning => _isRunning;
+  //是否后加入的事件先执行
+  final bool reverse;
 
-  DelayBuildManager();
+  DelayBuildManager({this.reverse = false});
   void _add(BuildInfo info) {
     _list.add(info);
     if (!_isRunning) {
@@ -205,7 +208,7 @@ class DelayBuildManager {
   void _actionNext() {
     if (_list.isNotEmpty) {
       _isRunning = true;
-      BuildInfo info = _list.last;
+      BuildInfo info = reverse == true ? _list.last : _list.first;
       if (info.nextStatus == _BuildStatus.idle || info.nextStatus == null) {
         info.currentStatus = _BuildStatus.idle;
         info.tryUnlink();

@@ -5,7 +5,8 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cached_network_image/src/image_provider/_image_provider_io.dart' if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
+import 'package:cached_network_image/src/image_provider/_image_provider_io.dart'
+    if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
     as CachedNetworkImage;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:image/image.dart' as IMG;
@@ -13,11 +14,17 @@ import 'package:flutter_summary/main/performance/widgets/round_corners_image.dar
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: implementation_imports
-import 'package:flutter/src/painting/_network_image_io.dart' if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
+import 'package:flutter/src/painting/_network_image_io.dart'
+    if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
 
 import 'isolate_manager.dart';
 
-final IsolateManager _isolateManager = IsolateManager(isolateFunction: _createRoundCornerIsolateMethod, reverseOrder: true, keepRunning: true);
+final IsolateManager _isolateManager = IsolateManager(
+  isolateFunction: _createRoundCornerIsolateMethod,
+  reverseOrder: true,
+  keepRunning: true,
+  maxCocurrentIsolateCount: 1,
+);
 
 enum ClipLocation {
   Start,
@@ -25,21 +32,162 @@ enum ClipLocation {
   End,
 }
 
+class _Position {
+  final int x;
+  final int y;
+
+  _Position(this.x, this.y);
+}
+
+extension _RadiusDouble on int {
+  bool get isValideRadius => this != null && this > 1;
+}
+
+extension _Uint8ListExtension on Uint32List {
+  Uint32List copyCrop(int width, int height, int x, int y, int w, int h) {
+    // Make sure crop rectangle is within the range of the src image.
+    x = x.clamp(0, width - 1).toInt();
+    y = y.clamp(0, height - 1).toInt();
+    if (x + w > width) {
+      w = width - x;
+    }
+    if (y + h > height) {
+      h = height - y;
+    }
+
+    Uint32List result = Uint32List(w * h);
+    for (var yi = 0, sy = y; yi < h; ++yi, ++sy) {
+      for (var xi = 0, sx = x; xi < w; ++xi, ++sx) {
+        result[yi * w + xi] = this[sy * width + sx];
+      }
+    }
+
+    return result;
+  }
+
+  void setCornerRadius({
+    @required int width,
+    @required int height,
+    @required int radius,
+    Color color,
+  }) {
+    assert(width != null && height != null && radius.isValideRadius);
+    if (width == null || height == null || !radius.isValideRadius) return;
+    //argb
+    int colorValue = (color ?? Colors.transparent).value;
+    //专程rgba
+    // colorValue = (colorValue & 0xffffff << 24) | (0xff000000 & colorValue) >> 24;
+
+    // 右下角中心点
+    _Position rightBottomCenter = _Position(width - radius, height - radius);
+    // 右上角中心点
+    _Position rightTopCenter = _Position(width - radius, radius - 1);
+    // 左上角中心点
+    _Position leftTopCenter = _Position(radius - 1, radius - 1);
+    // 左下角中心点
+    _Position leftBottomCenter = _Position(radius - 1, height - radius);
+
+    //圆弧和正方形对角线相交点的x坐标
+    double seperatedX = sqrt(radius * radius / 2);
+
+    void setPixelColor({
+      @required _Position center,
+      @required _Position relativePoint,
+    }) {
+      int x = center.x + relativePoint.x;
+      int y = center.y + relativePoint.y;
+      if (x >= 0 && x < width && y >= 0 && y < height) {
+        this[y * width + x] = colorValue;
+      }
+    }
+
+    void traverseSetPixelsColor({int x, int startY}) {
+      if (x >= seperatedX) {
+        startY = x;
+      } else {
+        startY = max(startY, x);
+        while (startY < radius && startY >= x && pow(x, 2) + pow(startY, 2) < pow(radius, 2)) {
+          startY++;
+        }
+      }
+
+      for (int i = startY; i < radius; i++) {
+        int pixelX = x;
+        int pixelY = i;
+
+        ///右下角
+        setPixelColor(
+          center: rightBottomCenter,
+          relativePoint: _Position(pixelX, pixelY),
+        );
+        if (pixelX != pixelY)
+          setPixelColor(
+            center: rightBottomCenter,
+            relativePoint: _Position(pixelY, pixelX),
+          );
+
+        ///右上角
+        setPixelColor(
+          center: rightTopCenter,
+          relativePoint: _Position(pixelX, -pixelY),
+        );
+        if (pixelX != pixelY)
+          setPixelColor(
+            center: rightTopCenter,
+            relativePoint: _Position(pixelY, -pixelX),
+          );
+
+        ///左上角
+        setPixelColor(
+          center: leftTopCenter,
+          relativePoint: _Position(-pixelX, -pixelY),
+        );
+        if (pixelX != pixelY)
+          setPixelColor(
+            center: leftTopCenter,
+            relativePoint: _Position(-pixelY, -pixelX),
+          );
+
+        ///左下角
+        setPixelColor(
+          center: leftBottomCenter,
+          relativePoint: _Position(-pixelX, pixelY),
+        );
+        if (pixelX != pixelY)
+          setPixelColor(
+            center: leftBottomCenter,
+            relativePoint: _Position(-pixelY, pixelX),
+          );
+      }
+      if (x < radius) {
+        traverseSetPixelsColor(x: x + 1, startY: startY - 1);
+      }
+    }
+
+    traverseSetPixelsColor(
+      x: 0,
+      startY: radius,
+    );
+  }
+}
+
 mixin CornerAndClipKeyMixin on AssetBundleImageKey {
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   int get cornerRadius;
   //cornerRadius圆角外围部分的颜色
   Color get cornerColor;
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  double get showWidth;
-  double get showHeight;
+  //缓存图片的大小
+  int get cacheImageWidth;
+  int get cacheImageHeight;
 
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
   ClipLocation get clipLocation;
 
-  bool get haveValidShowSize => showWidth != null && showHeight != null;
+  //显示出来的图片大小
+  Size get imageShowSize;
 
   @override
   bool operator ==(Object other) {
@@ -47,17 +195,20 @@ mixin CornerAndClipKeyMixin on AssetBundleImageKey {
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
-        other.haveValidShowSize == haveValidShowSize &&
-        (haveValidShowSize ? (other.showHeight == showHeight && other.showWidth == showWidth && other.clipLocation == clipLocation) : true);
+        other.cacheImageWidth == cacheImageWidth &&
+        other.cacheImageHeight == cacheImageHeight &&
+        other.imageShowSize == imageShowSize &&
+        (imageShowSize == null || other.clipLocation == clipLocation);
   }
 
   @override
-  int get hashCode => hashValues(super.hashCode, cornerRadius, haveValidShowSize);
+  int get hashCode => super.hashCode;
 }
 
 mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   int get cornerRadius;
   //cornerRadius圆角外围部分的颜色
   Color get cornerColor;
@@ -65,22 +216,18 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
   int get cacheImageWidth;
   int get cacheImageHeight;
 
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
   ClipLocation get clipLocation;
 
-  Size _imageShowSize;
-
-  @override
-  Future<T> obtainKey(ImageConfiguration configuration) {
-    _imageShowSize = configuration.size;
-    return super.obtainKey(configuration);
-  }
+  //显示出来的图片大小
+  Size get imageShowSize;
 
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
-    assert(cornerRadius != null && cornerRadius > 1);
-    final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
+    assert(cornerRadius.isValideRadius);
+    final DecoderCallback decodeRoundCorners =
+        (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
       assert(() {
         print('CornerAndClipProviderMixin load');
         return true;
@@ -89,7 +236,8 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
       int imageHeight;
       bool customCacheSize = this.cacheImageWidth != null || this.cacheImageHeight != null;
 
-      Uint8List uint8List = await decode(
+      //图片解码
+      Uint32List uint32List = await decode(
         bytes,
         cacheWidth: customCacheSize ? this.cacheImageWidth : cacheWidth,
         cacheHeight: customCacheSize ? this.cacheImageHeight : cacheHeight,
@@ -99,34 +247,48 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         if (image is ui.Image) {
           imageWidth = image.width;
           imageHeight = image.height;
-          return (await image.toByteData().catchError((onError) => null))?.buffer?.asUint8List();
+          return (await image.toByteData(format: ui.ImageByteFormat.rawRgba).catchError((onError) => null))
+              ?.buffer
+              ?.asUint32List();
         }
         return null;
       }).catchError(
         (onError) => null,
       );
-      if (uint8List == null) return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
+
+      if (uint32List == null)
+        return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
       // print('start ${DateTime.now().toIso8601String()}');
       // print('decode end ${DateTime.now().toIso8601String()}===${uint8List.length}');
 
+      //圆角或者裁剪操作
       var result = await _isolateManager
           .send(
             _IsolateMessage(
-              bytes: uint8List,
+              bytes: uint32List,
               cornerRadius: cornerRadius,
               color: cornerColor,
-              showSize: _imageShowSize,
+              imageWidth: imageWidth,
+              imageHeight: imageHeight,
               clipLocation: clipLocation,
+              showSize: imageShowSize,
             ),
           )
           .catchError((onError) => null);
+      //将像素数组解码成图片数据
       if (result is _IsolateResult) {
         return _decodeImageFromPixels(result.bytes, result.width, result.height, ui.PixelFormat.rgba8888);
       } else {
-        return _decodeImageFromPixels(uint8List, imageWidth, imageHeight, ui.PixelFormat.rgba8888);
+        return _decodeImageFromPixels(
+            uint32List.buffer.asUint8List(), imageWidth, imageHeight, ui.PixelFormat.rgba8888);
       }
     };
-    return super.load(key, decodeRoundCorners);
+
+    if (cornerRadius.isValideRadius) {
+      return super.load(key, decodeRoundCorners);
+    } else {
+      return super.load(key, decode);
+    }
   }
 
   @override
@@ -136,11 +298,13 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
         other.cacheImageWidth == cacheImageWidth &&
-        other.cacheImageHeight == cacheImageHeight;
+        other.cacheImageHeight == cacheImageHeight &&
+        other.imageShowSize == imageShowSize &&
+        (imageShowSize == null || other.clipLocation == clipLocation);
   }
 
   @override
-  int get hashCode => hashValues(super.hashCode, cornerRadius, cacheImageWidth, cacheImageHeight);
+  int get hashCode => super.hashCode;
 }
 
 class RoundCornersImageProvider {
@@ -177,29 +341,33 @@ class RoundCornersImageProvider {
 }
 
 class RoundCornersExactAssetImage extends ExactAssetImage with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
 
   const RoundCornersExactAssetImage(
     String assetName, {
     double scale = 1.0,
     AssetBundle bundle,
     String package,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(assetName, bundle: bundle, scale: scale, package: package);
 
@@ -207,42 +375,47 @@ class RoundCornersExactAssetImage extends ExactAssetImage with CornerAndClipProv
   Future<AssetBundleImageKey> obtainKey(ImageConfiguration configuration) {
     return super.obtainKey(configuration).then((value) {
       return WithCornerAssetBundleImageKey(
-        cornerRadius: cornerRadius,
         bundle: value.bundle,
         name: value.name,
         scale: value.scale,
-        clipLocation: clipLocation,
-        showHeight: showHeight,
-        showWidth: showWidth,
+        cornerRadius: cornerRadius,
         cornerColor: cornerColor,
+        cacheImageWidth: cacheImageWidth,
+        cacheImageHeight: cacheImageHeight,
+        clipLocation: clipLocation,
+        imageShowSize: imageShowSize,
       );
     });
   }
 }
 
 class RoundCornersAssetImage extends AssetImage with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
 
   const RoundCornersAssetImage(
     String assetName, {
     AssetBundle bundle,
     String package,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(assetName, bundle: bundle, package: package);
 
@@ -250,150 +423,171 @@ class RoundCornersAssetImage extends AssetImage with CornerAndClipProviderMixin 
   Future<AssetBundleImageKey> obtainKey(ImageConfiguration configuration) {
     return super.obtainKey(configuration).then((value) {
       return WithCornerAssetBundleImageKey(
-        cornerRadius: cornerRadius,
         bundle: value.bundle,
         name: value.name,
         scale: value.scale,
-        clipLocation: clipLocation,
-        showHeight: showHeight,
-        showWidth: showWidth,
+        cornerRadius: cornerRadius,
         cornerColor: cornerColor,
+        cacheImageWidth: cacheImageWidth,
+        cacheImageHeight: cacheImageHeight,
+        clipLocation: clipLocation,
+        imageShowSize: imageShowSize,
       );
     });
   }
 }
 
 class WithCornerAssetBundleImageKey extends AssetBundleImageKey with CornerAndClipKeyMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
 
-  const WithCornerAssetBundleImageKey(
-      {@required AssetBundle bundle,
-      @required String name,
-      @required double scale,
-      @required this.cornerRadius,
-      @required this.cornerColor,
-      @required this.showHeight,
-      @required this.showWidth,
-      @required this.clipLocation})
-      : super(bundle: bundle, name: name, scale: scale);
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
+
+  const WithCornerAssetBundleImageKey({
+    @required AssetBundle bundle,
+    @required String name,
+    @required double scale,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
+    this.cornerRadius,
+    this.cornerColor,
+    this.clipLocation,
+  }) : super(bundle: bundle, name: name, scale: scale);
 }
 
 class RoundCornersFileImage extends FileImage with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
+
   const RoundCornersFileImage(
     File file, {
     double scale = 1.0,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(file, scale: scale);
 }
 
 class RoundCornersMemoryImage extends MemoryImage with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
 
   const RoundCornersMemoryImage(
     Uint8List bytes, {
     double scale = 1.0,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(bytes, scale: scale);
 }
 
 class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
+
   const RoundCornersNetworkImage(
     String url, {
     double scale = 1.0,
     Map<String, String> headers,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(url, scale: scale, headers: headers);
-  @override
-  Future<network_image.NetworkImage> obtainKey(ImageConfiguration configuration) {
-    // TODO: implement obtainKey
-    return super.obtainKey(configuration);
-  }
 }
 
-class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImageProvider with CornerAndClipProviderMixin {
-  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
-  final double showWidth;
-  final double showHeight;
-
-  //showWidth、showHeight设置后裁取的位置
-  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
-  final ClipLocation clipLocation;
-
-  ///圆角，如果showSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
-  ///如果showSize为空，直接对图片设置圆角
+class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImageProvider
+    with CornerAndClipProviderMixin {
+  ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
   final int cornerRadius;
   //cornerRadius圆角外围部分的颜色
   final Color cornerColor;
+  //图片显示的大小，如果设置了图片显示宽高，会按图片显示宽高比截取原图
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //显示出来的图片大小
+  final Size imageShowSize;
   RoundCornerCachedNetworkImage(
     String url, {
     double scale = 1.0,
     Map<String, String> headers,
     BaseCacheManager cacheManager,
     ImageRenderMethodForWeb imageRenderMethodForWeb,
+    this.cacheImageWidth,
+    this.cacheImageHeight,
+    this.imageShowSize,
     this.cornerRadius,
     this.cornerColor,
-    this.showHeight,
-    this.showWidth,
     this.clipLocation = ClipLocation.Center,
   }) : super(
           url,
@@ -406,61 +600,74 @@ class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImag
 
 Future _createRoundCornerIsolateMethod(dynamic info) async {
   if (info is _IsolateMessage) {
-    IMG.Image imageInfo = IMG.decodeImage(info.bytes);
-    double scale;
-    if (info.showSize != null && info.showSize.width != null && info.showSize.height != null) {
-      scale = min(imageInfo.height / info.showHeight, imageInfo.width / info.showWidth);
-      int targetHeight = (info.showHeight * scale).toInt();
-      int targetWidth = (info.showWidth * scale).toInt();
-      if (imageInfo.height - targetHeight > 2) {
-        //原图偏高了
+    if (info.bytes != null && info.cornerRadius.isValideRadius && info.imageWidth != null && info.imageHeight != null) {
+      Uint32List uint32list = info.bytes;
+      double clipRatio = info.showSize != null ? info.showSize.width / info.showSize.height : null;
+      int resultImageWidth = clipRatio != null ? (clipRatio * info.imageHeight).toInt() : info.imageWidth;
+      int resultImageHeight = info.imageHeight;
+      //设置两个像素区间，以免相差一两个像素的也进行裁剪增加处理时间
+      if ((resultImageWidth - info.imageWidth).abs() > 2) {
         ClipLocation location = info.clipLocation ?? ClipLocation.Center;
-        int x = 0;
-        int y;
-        switch (location) {
-          case ClipLocation.Start:
-            y = 0;
-            break;
-          case ClipLocation.Center:
-            y = (imageInfo.height - targetHeight) ~/ 2;
-            break;
-          case ClipLocation.End:
-            y = imageInfo.height - targetHeight;
-            break;
+        //需要裁剪
+        if (resultImageWidth < info.imageWidth) {
+          //当前图片过宽了
+          resultImageHeight = info.imageHeight;
+          resultImageWidth = min((resultImageHeight * clipRatio).toInt(), info.imageWidth);
+          int x;
+          switch (location) {
+            case ClipLocation.Start:
+              x = 0;
+              break;
+            case ClipLocation.Center:
+              x = (info.imageWidth - resultImageWidth) ~/ 2;
+              break;
+            case ClipLocation.End:
+              x = info.imageWidth - resultImageWidth;
+              break;
+          }
+          uint32list =
+              uint32list.copyCrop(info.imageWidth, info.imageHeight, x, 0, resultImageWidth, resultImageHeight);
+        } else {
+          //当前图片过高了
+          resultImageWidth = info.imageWidth;
+          resultImageHeight = min(resultImageWidth ~/ clipRatio, resultImageHeight);
+          int y = 0;
+          switch (location) {
+            case ClipLocation.Start:
+              y = 0;
+              break;
+            case ClipLocation.Center:
+              y = (info.imageHeight - resultImageHeight) ~/ 2;
+              break;
+            case ClipLocation.End:
+              y = info.imageHeight - resultImageHeight;
+              break;
+          }
+          uint32list = uint32list.sublist(y * resultImageWidth, (y + resultImageHeight) * resultImageWidth);
         }
-        imageInfo = IMG.copyCrop(imageInfo, x, y, imageInfo.width, targetHeight);
-      } else if (imageInfo.width - targetWidth > 2) {
-        //原图偏宽了
-        ClipLocation location = info.clipLocation ?? ClipLocation.Center;
-        int x;
-        int y = 0;
-        switch (location) {
-          case ClipLocation.Start:
-            x = 0;
-            break;
-          case ClipLocation.Center:
-            x = (imageInfo.width - targetWidth) ~/ 2;
-            break;
-          case ClipLocation.End:
-            x = imageInfo.width - targetWidth;
-            break;
-        }
-        imageInfo = IMG.copyCrop(imageInfo, x, y, targetWidth, imageInfo.height);
+      } else {
+        resultImageWidth = info.imageWidth;
+        resultImageHeight = info.imageHeight;
       }
-    }
-    if (info.cornerRadius != null) {
-      int radius = scale == null ? info.cornerRadius : (info.cornerRadius * scale).toInt();
-      imageInfo.setRoundCorners(radius: radius, color: info.color);
-    }
 
-    return IMG.encodePng(imageInfo);
+      if (info.cornerRadius != null) {
+        int radius =
+            info.showSize == null ? info.cornerRadius : (info.cornerRadius * resultImageWidth) ~/ info.showSize.width;
+        uint32list.setCornerRadius(
+            width: resultImageWidth, height: resultImageHeight, radius: radius, color: info.color);
+        return _IsolateResult(
+            bytes: uint32list.buffer.asUint8List(), width: resultImageWidth, height: resultImageHeight);
+      }
+    } else {
+      return _IsolateResult(bytes: info.bytes.buffer.asUint8List(), width: info.imageWidth, height: info.imageHeight);
+    }
   }
   return null;
 }
 
-Future<Codec> _decodeImageFromPixels(Uint8List pixels, int width, int height, PixelFormat format) {
-  ImmutableBuffer.fromUint8List(pixels).then((ImmutableBuffer buffer) {
-    final ImageDescriptor descriptor = ImageDescriptor.raw(
+Future<ui.Codec> _decodeImageFromPixels(Uint8List pixels, int width, int height, ui.PixelFormat format) {
+  return ui.ImmutableBuffer.fromUint8List(pixels).then((ui.ImmutableBuffer buffer) {
+    final ui.ImageDescriptor descriptor = ui.ImageDescriptor.raw(
       buffer,
       width: width,
       height: height,
@@ -472,22 +679,31 @@ Future<Codec> _decodeImageFromPixels(Uint8List pixels, int width, int height, Pi
 }
 
 class _IsolateMessage {
-  final Uint8List bytes;
+  final Uint32List bytes;
+  //bytes代表的图片的宽高
+  final int imageWidth;
+  final int imageHeight;
+
   final int cornerRadius;
   final Color color;
 
-  //showSize设置后裁取的位置
+  //clipRatio设置后裁取的位置
   //如果设置ClipLocation.Start，则当原始图片过长的时候从头部截取宽高比为clipRatio的图片。
   final ClipLocation clipLocation;
+  //最终得到的图片的宽高比
   final Size showSize;
 
   _IsolateMessage({
     @required this.bytes,
-    this.cornerRadius,
+    @required this.cornerRadius,
     this.color,
-    this.showSize,
+    @required this.imageWidth,
+    @required this.imageHeight,
     this.clipLocation,
-  }) : assert(bytes != null);
+    this.showSize,
+  }) : assert(
+          bytes != null && cornerRadius.isValideRadius && imageWidth != null && imageHeight != null,
+        );
 }
 
 class _IsolateResult {
@@ -495,5 +711,6 @@ class _IsolateResult {
   final int width;
   final int height;
 
-  _IsolateResult({@required this.bytes, @required this.width, @required this.height}) : assert(bytes != null && width != null && height != null);
+  _IsolateResult({@required this.bytes, @required this.width, @required this.height})
+      : assert(bytes != null && width != null && height != null);
 }
