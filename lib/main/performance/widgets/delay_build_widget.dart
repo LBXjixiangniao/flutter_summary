@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'not_delay_build_widget.dart';
 
@@ -18,7 +19,7 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
   @override
   void initState() {
     super.initState();
-    manager = DelayBuildManager();
+    manager = DelayBuildManager(reverse: true);
   }
 
   @override
@@ -26,6 +27,7 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
     return LayoutBuilder(
       builder: (_, constraints) {
         return DelayBuildChild(
+          index: info.index,
           buildManager: manager,
           width: constraints.maxWidth,
           height: constraints.maxHeight,
@@ -42,50 +44,22 @@ enum _BuildStatus {
   paint,
 }
 
-class DelayBuildChild extends StatelessWidget {
+class DelayBuildChild extends SingleChildRenderObjectWidget {
   final DelayBuildManager buildManager;
   final double width;
   final double height;
   final bool addRepaintBoundary;
-  final Widget child;
+  final int index;
   DelayBuildChild({
-    Key key,
-    this.child,
-    this.buildManager,
-    @required this.width,
-    @required this.height,
-    this.addRepaintBoundary = true,
-  })  : assert(width != null && height != null),
-        super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    Widget buildControlChild = _BuildControlChild(
-      key: key,
-      child: child,
-      width: width,
-      height: height,
-    );
-    if (addRepaintBoundary == true) {
-      buildControlChild = RepaintBoundary(
-        child: buildControlChild,
-      );
-    }
-    return buildControlChild;
-  }
-}
-
-class _BuildControlChild extends SingleChildRenderObjectWidget {
-  final DelayBuildManager buildManager;
-  final double width;
-  final double height;
-  _BuildControlChild({
     Key key,
     Widget child,
     this.buildManager,
     this.width,
     this.height,
-  }) : super(key: key, child: child);
+    this.index,
+    this.addRepaintBoundary = true,
+  })  : assert(width != null && height != null && addRepaintBoundary != null),
+        super(key: key, child: child);
 
   @override
   _BuildControlRenderObject createRenderObject(BuildContext context) {
@@ -93,6 +67,8 @@ class _BuildControlChild extends SingleChildRenderObjectWidget {
       buildManager: buildManager,
       width: width,
       height: height,
+      addRepaintBoundary: addRepaintBoundary,
+      index: index,
     );
   }
 
@@ -101,6 +77,8 @@ class _BuildControlChild extends SingleChildRenderObjectWidget {
     renderObject.buildManager = buildManager;
     renderObject.width = width;
     renderObject.height = height;
+    renderObject.addRepaintBoundary = addRepaintBoundary;
+    renderObject.index = index;
   }
 
   @override
@@ -115,21 +93,46 @@ class _BuildControlRenderObject extends RenderProxyBox {
   DelayBuildManager buildManager;
   double width;
   double height;
+  bool addRepaintBoundary;
+  int index;
   _BuildControlRenderObject({
     this.buildManager,
     this.width,
     this.height,
-  }) {
+    this.addRepaintBoundary,
+    this.index,
+  }) : assert(width != null && height != null) {
     info = BuildInfo(markNeedsLayout: () {
       if (this.attached) {
+        print('markNeedsLayout $index');
         super.markNeedsLayout();
       }
     }, markNeedsPaint: () {
       if (this.attached) {
+        print('markNeedsPaint $index');
+        if (index == 9) {
+          print('here');
+        }
+
         super.markNeedsPaint();
       }
     });
   }
+
+  @override
+  void attach(covariant PipelineOwner owner) {
+    print('attach $index');
+    super.attach(owner);
+  }
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    // TODO: implement toString
+    return index.toString();
+  }
+
+  @override
+  bool get isRepaintBoundary => addRepaintBoundary;
 
   @override
   Size get size => Size(width, height);
@@ -151,6 +154,7 @@ class _BuildControlRenderObject extends RenderProxyBox {
   @override
   void performLayout() {
     if (info.currentStatus == _BuildStatus.layout) {
+      print('performLayout $index');
       super.performLayout();
     } else {
       performResize();
@@ -159,6 +163,7 @@ class _BuildControlRenderObject extends RenderProxyBox {
 
   // @override
   void layout(Constraints constraints, {bool parentUsesSize = false}) {
+    print('layout $index');
     super.layout(BoxConstraints.tight(Size(width, height)), parentUsesSize: false);
   }
 
@@ -173,6 +178,7 @@ class _BuildControlRenderObject extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     if (info.list == null || info.currentStatus == _BuildStatus.paint) {
+      print('paint $index');
       super.paint(context, offset);
     }
   }
@@ -184,7 +190,7 @@ class _BuildControlRenderObject extends RenderProxyBox {
   }
 }
 
-DelayBuildManager _delayBuildManager = DelayBuildManager();
+DelayBuildManager _delayBuildManager = DelayBuildManager(reverse: true);
 
 class DelayBuildManager {
   final LinkedList<BuildInfo> _list = LinkedList<BuildInfo>();
@@ -199,6 +205,15 @@ class DelayBuildManager {
     _list.add(info);
     if (!_isRunning) {
       _isRunning = true;
+      ServicesBinding.instance.scheduleTask(() {
+        print('*************** scheduleTask');
+      }, Priority.idle);
+      // ServicesBinding.instance.scheduleTask(() {
+      //   print('scheduleTask');
+      // }, Priority.animation);
+      // ServicesBinding.instance.scheduleTask(() {
+      //   print('scheduleTask');
+      // }, Priority.touch);
       ServicesBinding.instance.addPostFrameCallback((_) {
         _actionNext();
       });
@@ -223,6 +238,7 @@ class DelayBuildManager {
           info.nextStatus = _BuildStatus.idle;
           info.markNeedsPaint();
         }
+
         ServicesBinding.instance.addPostFrameCallback((_) {
           _actionNext();
         });
