@@ -58,17 +58,17 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
                               height: 60,
                               width: 60,
                               buildManager: managerThree,
-                              // child: ClipRRect(
-                              //   borderRadius: BorderRadius.circular(8),
-                              //   child: Image.network(
-                              //     info.url,
-                              //     fit: BoxFit.cover,
-                              //     width: 60,
-                              //     height: 60,
-                              //     cacheWidth: 120,
-                              //     cacheHeight: 120,
-                              //   ),
-                              // ),
+                            //   // child: ClipRRect(
+                            //   //   borderRadius: BorderRadius.circular(8),
+                            //   //   child: Image.network(
+                            //   //     info.url,
+                            //   //     fit: BoxFit.cover,
+                            //   //     width: 60,
+                            //   //     height: 60,
+                            //   //     cacheWidth: 120,
+                            //   //     cacheHeight: 120,
+                            //   //   ),
+                            //   // ),
                               child: Image(
                                 image: RoundCornersNetworkImage(
                                   info.url,
@@ -90,9 +90,7 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
                                   decoration: BoxDecoration(
                                     color: Colors.red[100],
                                     borderRadius: BorderRadius.circular(4),
-                                    boxShadow: [
-                                      BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)
-                                    ],
+                                    boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
                                   ),
                                   child: Text(
                                     info.title,
@@ -109,6 +107,7 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
                                   padding: const EdgeInsets.all(4),
                                   decoration: BoxDecoration(
                                     color: Colors.orange.withOpacity(0.3),
+                                    // color: Colors.orange,
                                     borderRadius: BorderRadius.circular(4),
                                     border: Border.all(
                                       color: Colors.red,
@@ -126,21 +125,32 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
                           ],
                         ),
                         Expanded(
-                          child: Row(
-                            children: [
-                              CircleAvatar(
-                                backgroundColor: Colors.yellow.withOpacity(0.5),
-                                child: Text(
-                                  info.index.toString(),
-                                ),
-                              ),
-                              Image.asset(
-                                ImageHelper.image(
-                                  'icon_a_${info.aboveIcon}.png',
-                                ),
-                                fit: BoxFit.cover,
-                              ),
-                            ],
+                          child: LayoutBuilder(
+                            builder: (_, constraints) {
+                              return Row(
+                                children: [
+                                  Container(
+                                    alignment: Alignment.center,
+                                    width: constraints.maxHeight,
+                                    height: constraints.maxHeight,
+                                    decoration: BoxDecoration(
+                                      color: Colors.yellow.withOpacity(0.5),
+                                      // color: Colors.yellow,
+                                      borderRadius: BorderRadius.circular(constraints.maxHeight / 2),
+                                    ),
+                                    child: Text(
+                                      info.index.toString(),
+                                    ),
+                                  ),
+                                  Image.asset(
+                                    ImageHelper.image(
+                                      'icon_a_${info.aboveIcon}.png',
+                                    ),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ),
                         Row(
@@ -170,6 +180,7 @@ class _RoundedCornderBuildPageState extends NotDelayBuildWidgetState {
                         Container(
                           decoration: BoxDecoration(
                             color: Colors.orange.withOpacity(0.3),
+                            // color: Colors.orange,
                             borderRadius: BorderRadius.circular(4),
                             border: Border.all(
                               color: Colors.red,

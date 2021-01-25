@@ -91,9 +91,7 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
                                 decoration: BoxDecoration(
                                   color: Colors.red[100],
                                   borderRadius: BorderRadius.circular(4),
-                                  boxShadow: [
-                                    BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)
-                                  ],
+                                  boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
                                 ),
                                 child: Text(
                                   info.title,
@@ -127,21 +125,32 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
                         ],
                       ),
                       Expanded(
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: Colors.yellow.withOpacity(0.5),
-                              child: Text(
-                                info.index.toString(),
-                              ),
-                            ),
-                            Image.asset(
-                              ImageHelper.image(
-                                'icon_a_${info.aboveIcon}.png',
-                              ),
-                              fit: BoxFit.cover,
-                            ),
-                          ],
+                        child: LayoutBuilder(
+                          builder: (_, constraints) {
+                            return Row(
+                              children: [
+                                Container(
+                                  alignment: Alignment.center,
+                                  width: constraints.maxHeight,
+                                  height: constraints.maxHeight,
+                                  decoration: BoxDecoration(
+                                    color: Colors.yellow.withOpacity(0.5),
+                                    // color: Colors.yellow,
+                                    borderRadius: BorderRadius.circular(constraints.maxHeight / 2),
+                                  ),
+                                  child: Text(
+                                    info.index.toString(),
+                                  ),
+                                ),
+                                Image.asset(
+                                  ImageHelper.image(
+                                    'icon_a_${info.aboveIcon}.png',
+                                  ),
+                                  fit: BoxFit.cover,
+                                ),
+                              ],
+                            );
+                          },
                         ),
                       ),
                       Row(
