@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/performance/widgets/cupertino_alert_dialog.dart';
+import 'package:flutter_summary/main/performance/widgets/delay_layout_paint_widget.dart';
 import 'package:flutter_summary/router/router.dart';
 
 import 'widgets/delay_build_widget.dart';
@@ -26,20 +27,26 @@ class PerformanceListPage extends StatelessWidget {
             Navigator.push(context, RouterManager.routeForPage(page: CupertinoAlertDialogTest()));
           }),
       ListTileInfo(
+          title: 'DelayLayoutPaintWidget',
+          subTitle: '延时layout和paint优化',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: DelayLayoutPaintWidgetTestPage()));
+          }),
+      ListTileInfo(
           title: 'DelayBuildWidget',
-          subTitle: '延时构建和图片圆角优化',
+          subTitle: '延时build优化',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: DelayBuildWidgetTestPage()));
           }),
       ListTileInfo(
-          title: 'NotDelayBuildWidget',
+          title: 'CommontWidget',
           subTitle: '普通页面，没优化的',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: NotDelayBuildWidget()));
           }),
       ListTileInfo(
-          title: 'just RoundedImage',
-          subTitle: '没有延时构建，只有图片圆角处理',
+          title: 'DelayBuildAndLayoutPaintWidget',
+          subTitle: '延时build和延时layout和paint混合使用',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: RoundedCornderBuildPage()));
           }),

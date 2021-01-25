@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:isolate';
 import 'dart:math';
 
+import 'package:flutter_summary/main/performance/manager.dart/manager.dart';
 import 'package:flutter_summary/main/performance/widgets/round_corners_image_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/util/image_helper.dart';
