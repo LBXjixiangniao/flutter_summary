@@ -143,50 +143,40 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
       clipBehavior: Clip.none,
       itemBuilder: (_, index) {
         GridInfo info = dataList[index];
-        return Padding(
-          padding: const EdgeInsets.all(4),
-          child: childBuilder(info),
-        );
+        return childBuilder(info);
       },
     );
   }
 
   Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              useRoundCornerImageProvider
-                  ? Image(
-                      image: RoundCornersNetworkImage(
-                        info.url,
-                        cornerRadius: 30,
-                        cornerColor: ColorHelper.BGColor,
-                        imageShowSize: Size(itemWidth, itemHeight - 30),
-                        cacheImageWidth: itemWidth.toInt() * 2,
-                        cacheImageHeight: (itemHeight - 30).toInt() * 2,
-                      ),
-                      fit: BoxFit.cover,
-                      width: itemWidth,
-                      height: itemHeight - 30,
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(30),
-                      child: Image.network(
-                        info.url,
-                        fit: BoxFit.cover,
-                        width: itemWidth,
-                        height: itemHeight,
-                        cacheWidth: itemWidth.toInt() * 2,
-                        cacheHeight: (itemHeight - 30).toInt() * 2,
-                      ),
-                    ),
-              Column(
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: Column(
+        children: [
+          Expanded(
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
                 children: [
                   Row(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          info.url,
+                          fit: BoxFit.cover,
+                          width: 60,
+                          height: 60,
+                          cacheWidth: 120,
+                          cacheHeight: 120,
+                        ),
+                      ),
+                      Spacer(),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.red[100],
@@ -194,34 +184,21 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                           boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
                         ),
                         child: Text(
-                          info.title + info.subTitle,
+                          info.title,
                           style: TextStyle(
                             fontSize: 13,
                             color: ColorHelper.Black153,
                           ),
                         ),
                       ),
-                      CircleAvatar(
-                        backgroundColor: Colors.yellow.withOpacity(0.5),
-                        child: Text(
-                          info.index.toString(),
-                        ),
-                      ),
                     ],
                   ),
                   Row(
                     children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          color: Colors.orange.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(
-                            color: Colors.red,
-                          ),
-                        ),
+                      CircleAvatar(
+                        backgroundColor: Colors.yellow.withOpacity(0.5),
                         child: Text(
-                          info.subTitle + info.subTitle,
-                          style: TextStyle(fontSize: 13, color: Colors.blue[100]),
+                          info.index.toString(),
                         ),
                       ),
                       Image.asset(
@@ -270,37 +247,50 @@ class NotDelayBuildWidgetState extends State<NotDelayBuildWidget> {
                   ),
                   Text(
                     info.subTitle + info.title,
-                    style: TextStyle(fontSize: 12, color: Colors.yellow[100]),
+                    style: TextStyle(fontSize: 12, color: Colors.red[100]),
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.red,
+                      ),
+                    ),
+                    child: Text(
+                      info.subTitle + info.subTitle,
+                      style: TextStyle(fontSize: 13, color: Colors.blue[100]),
+                    ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-        SizedBox(
-          height: 30,
-          child: Row(
-            children: [
-              Text(
-                info.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
+          SizedBox(
+            height: 30,
+            child: Row(
+              children: [
+                Text(
+                  info.title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red,
+                  ),
                 ),
-              ),
-              Image.asset(
-                ImageHelper.image('icon_${info.icon}.png'),
-                width: 25,
-              ),
-              Spacer(),
-              Text(
-                info.subTitle,
-              ),
-            ],
+                Image.asset(
+                  ImageHelper.image('icon_${info.icon}.png'),
+                  width: 25,
+                ),
+                Spacer(),
+                Text(
+                  info.subTitle,
+                ),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

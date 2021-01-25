@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:collection';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -20,105 +21,135 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
   String get pageTitle => '延时构建小部件测试';
   DelayBuildManager manager;
   DelayBuildManager managerTwo;
+  DelayBuildManager managerThree;
   @override
   void initState() {
     super.initState();
     manager = DelayBuildManager(reverse: true);
     managerTwo = DelayBuildManager(reverse: true);
+    managerThree = DelayBuildManager(reverse: true);
     managerTwo.dependentOn(manager);
+    managerThree.dependentOn(managerTwo);
   }
 
   @override
   Widget item(GridInfo info, {bool useRoundCornerImageProvider = false}) {
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
-            children: [
-              DelayBuildChild(
+    return Padding(
+      padding: const EdgeInsets.all(4),
+      child: DelayBuildChild(
+        buildManager: manager,
+        width: itemWidth,
+        height: itemHeight,
+        addRepaintBoundary: false,
+        child: Column(
+          children: [
+            Expanded(
+              child: DelayBuildChild(
+                height: itemHeight - 30,
+                width: itemWidth,
                 buildManager: managerTwo,
-                width: itemWidth,
-                height: itemHeight - 30,
-                child: Image(
-                  image: RoundCornersNetworkImage(
-                    info.url,
-                    cornerRadius: 30,
-                    cornerColor: ColorHelper.BGColor,
-                    imageShowSize: Size(itemWidth, itemHeight - 30),
-                    cacheImageWidth: itemWidth.toInt() * 2,
-                    cacheImageHeight: (itemHeight - 30).toInt() * 2,
+                addRepaintBoundary: false,
+                child: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  fit: BoxFit.cover,
-                  width: itemWidth,
-                  height: itemHeight - 30,
-                ),
-              ),
-              DelayBuildChild(
-                height: itemHeight - 30,
-                width: itemWidth,
-                buildManager: manager,
-                child: Column(
-                  children: [
-                    DelayBuildChild(
-                      height: 40,
-                      width: itemWidth,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
+                  child: Column(
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.red[100],
-                              borderRadius: BorderRadius.circular(4),
-                              boxShadow: [BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)],
-                            ),
-                            child: Text(
-                              info.title + info.subTitle,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: ColorHelper.Black153,
+                          DelayBuildChild(
+                            height: 60,
+                            width: 60,
+                            buildManager: managerThree,
+                            // child: ClipRRect(
+                            //   borderRadius: BorderRadius.circular(8),
+                            //   child: Image.network(
+                            //     info.url,
+                            //     fit: BoxFit.cover,
+                            //     width: 60,
+                            //     height: 60,
+                            //     cacheWidth: 120,
+                            //     cacheHeight: 120,
+                            //   ),
+                            // ),
+                            child: Image(
+                              image: RoundCornersNetworkImage(
+                                info.url,
+                                cornerRadius: 8,
+                                cornerColor: Colors.white,
+                                imageShowSize: Size(60, 60),
+                                cacheImageWidth: 120,
+                                cacheImageHeight: 120,
                               ),
+                              fit: BoxFit.cover,
+                              width: itemWidth,
+                              height: itemHeight - 30,
                             ),
                           ),
-                          CircleAvatar(
-                            backgroundColor: Colors.yellow.withOpacity(0.5),
-                            child: Text(
-                              info.index.toString(),
-                            ),
+                          Spacer(),
+                          Column(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: Colors.red[100],
+                                  borderRadius: BorderRadius.circular(4),
+                                  boxShadow: [
+                                    BoxShadow(color: ColorHelper.DividerColor, spreadRadius: 1, blurRadius: 4)
+                                  ],
+                                ),
+                                child: Text(
+                                  info.title,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: ColorHelper.Black153,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: 8),
+                              Container(
+                                width: 40,
+                                height: 40,
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(4),
+                                  border: Border.all(
+                                    color: Colors.red,
+                                  ),
+                                ),
+                                child: Image.asset(
+                                  ImageHelper.image(
+                                    'icon_a_${info.aboveIcon}.png',
+                                  ),
+                                  width: 20,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ),
-                    DelayBuildChild(
-                      height: 40,
-                      width: itemWidth,
-                      child: Row(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: Colors.red,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            CircleAvatar(
+                              backgroundColor: Colors.yellow.withOpacity(0.5),
+                              child: Text(
+                                info.index.toString(),
                               ),
                             ),
-                            child: Text(
-                              info.subTitle + info.subTitle,
-                              style: TextStyle(fontSize: 13, color: Colors.blue[100]),
+                            Image.asset(
+                              ImageHelper.image(
+                                'icon_a_${info.aboveIcon}.png',
+                              ),
+                              fit: BoxFit.cover,
                             ),
-                          ),
-                          Image.asset(
-                            ImageHelper.image(
-                              'icon_a_${info.aboveIcon}.png',
-                            ),
-                            width: 35,
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    DelayBuildChild(
-                      height: 40,
-                      width: itemWidth,
-                      child: Row(
+                      Row(
                         children: [
                           Column(
                             children: [
@@ -136,59 +167,56 @@ class _DelayBuildWidgetTestPageState extends NotDelayBuildWidgetState {
                             info.subTitle,
                             style: TextStyle(fontSize: 14, color: Colors.black12),
                           ),
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.3),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: Colors.red,
-                              ),
-                            ),
-                            child: Image.asset(
-                              ImageHelper.image(
-                                'icon_a_${info.aboveIcon}.png',
-                              ),
-                              width: 20,
-                            ),
-                          ),
                         ],
                       ),
-                    ),
-                    Text(
-                      info.subTitle + info.title,
-                      style: TextStyle(fontSize: 12, color: Colors.yellow[100]),
-                    ),
-                  ],
+                      Text(
+                        info.subTitle + info.title,
+                        style: TextStyle(fontSize: 12, color: Colors.red[100]),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.orange.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: Colors.red,
+                          ),
+                        ),
+                        child: Text(
+                          info.subTitle + info.subTitle,
+                          style: TextStyle(fontSize: 13, color: Colors.blue[100]),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-          ),
+            ),
+            SizedBox(
+              height: 30,
+              child: Row(
+                children: [
+                  Text(
+                    info.title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red,
+                    ),
+                  ),
+                  Image.asset(
+                    ImageHelper.image('icon_${info.icon}.png'),
+                    width: 25,
+                  ),
+                  Spacer(),
+                  Text(
+                    info.subTitle,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
-        SizedBox(
-          height: 30,
-          child: Row(
-            children: [
-              Text(
-                info.title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red,
-                ),
-              ),
-              Image.asset(
-                ImageHelper.image('icon_${info.icon}.png'),
-                width: 25,
-              ),
-              Spacer(),
-              Text(
-                info.subTitle,
-              ),
-            ],
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -353,7 +381,7 @@ class _BuildDelayMarker extends InheritedWidget {
 
 //用来传递_BuildDelayRenderObject的info和buildManager到子树
 class _BuildDelayMarkerElement extends InheritedElement {
-  BuildInfo _info;
+  LayoutAndPaintAction _info;
   DelayBuildManager _buildManager;
   _BuildDelayMarkerElement(InheritedWidget widget) : super(widget);
 
@@ -383,9 +411,9 @@ class _BuildDelayMarkerElement extends InheritedElement {
 
 class _BuildDelayRenderObject extends RenderProxyBox {
   //info依赖于_dependencyBuildInfo
-  BuildInfo _dependencyBuildInfo;
+  LayoutAndPaintAction _dependencyBuildInfo;
 
-  BuildInfo info;
+  LayoutAndPaintAction info;
   DelayBuildManager buildManager;
   double width;
   double height;
@@ -398,7 +426,7 @@ class _BuildDelayRenderObject extends RenderProxyBox {
     this.height,
     this.addRepaintBoundary,
   }) : assert(width != null && height != null) {
-    info = BuildInfo(markNeedsLayout: () {
+    info = LayoutAndPaintAction(markNeedsLayout: () {
       if (this.attached) {
         super.markNeedsLayout();
         return true;
@@ -481,7 +509,7 @@ class _BuildDelayRenderObject extends RenderProxyBox {
 final DelayBuildManager defaultDelayBuildManager = DelayBuildManager(reverse: true);
 
 class DelayBuildManager {
-  final LinkedList<BuildInfo> _list = LinkedList<BuildInfo>();
+  final LinkedList<DelayAction> _list = LinkedList<DelayAction>();
   bool _isRunning = false;
 
   bool get isRunning => _isRunning;
@@ -514,17 +542,36 @@ class DelayBuildManager {
 
   void _start() {
     if (!_isRunning) {
-      if (_dependentcy?._isRunning == true) return;
       _dependent?._stop();
+      if (!canStart()) return;
       _isRunning = true;
-      ServicesBinding.instance.addPostFrameCallback((_) {
+      //用future，因为此时可能没有帧刷新了，所以此处不能用ServicesBinding.instance.addPostFrameCallback
+      Future.delayed(
+          Duration(
+            milliseconds: 16,
+          ), () {
         _actionNext();
       });
     }
   }
 
+  //如果往上遍历_dependentcy有任务待执行，则该manager不能start
+  bool canStart() {
+    if (_dependentcy == null) return true;
+    bool b = true;
+    DelayBuildManager parentManager = _dependentcy;
+    while (parentManager != null) {
+      if (parentManager?._list?.isNotEmpty == true) {
+        b = false;
+        break;
+      }
+      parentManager = parentManager._dependentcy;
+    }
+    return b;
+  }
+
   DelayBuildManager({this.reverse = false});
-  void _add(BuildInfo info) {
+  void _add(DelayAction info) {
     _list.add(info);
     _start();
   }
@@ -532,29 +579,43 @@ class DelayBuildManager {
   void _actionNext() {
     if (!_isRunning) return;
     if (_list.isNotEmpty) {
-      BuildInfo info = reverse == true ? _list.last : _list.first;
-      if (info.nextStatus == _BuildStatus.idle || info.nextStatus == null) {
-        info.currentStatus = _BuildStatus.idle;
-        info.tryUnlink();
-        _actionNext();
-      } else {
-        bool waitNextFrame = false;
-        if (info.nextStatus == _BuildStatus.layout) {
-          info.currentStatus = _BuildStatus.layout;
-          info.nextStatus = _BuildStatus.paint;
-          waitNextFrame = info.markNeedsLayout();
-        } else if (info.nextStatus == _BuildStatus.paint) {
-          info.currentStatus = _BuildStatus.paint;
-          info.nextStatus = _BuildStatus.idle;
-          waitNextFrame = info.markNeedsPaint();
+      DelayAction info = reverse == true ? _list.last : _list.first;
+      if (info is LayoutAndPaintAction) {
+        if (info.nextStatus == _BuildStatus.idle || info.nextStatus == null) {
+          info.currentStatus = _BuildStatus.idle;
+          info.tryUnlink();
+          _actionNext();
+        } else {
+          bool waitNextFrame = false;
+          if (info.nextStatus == _BuildStatus.layout) {
+            info.currentStatus = _BuildStatus.layout;
+            info.nextStatus = _BuildStatus.paint;
+            waitNextFrame = info.markNeedsLayout();
+          } else if (info.nextStatus == _BuildStatus.paint) {
+            info.currentStatus = _BuildStatus.paint;
+            info.nextStatus = _BuildStatus.idle;
+            waitNextFrame = info.markNeedsPaint();
+          }
+          if (waitNextFrame) {
+            ServicesBinding.instance.addPostFrameCallback((_) {
+              _actionNext();
+            });
+          } else {
+            _actionNext();
+          }
         }
-        if (waitNextFrame) {
+      } else if (info is MountAction) {
+        bool b = info.callback?.call();
+        info.tryUnlink();
+        if (b == true) {
           ServicesBinding.instance.addPostFrameCallback((_) {
             _actionNext();
           });
         } else {
           _actionNext();
         }
+      } else {
+        _actionNext();
       }
     } else {
       _isRunning = false;
@@ -563,20 +624,30 @@ class DelayBuildManager {
   }
 }
 
-class BuildInfo extends LinkedListEntry<BuildInfo> {
+class DelayAction extends LinkedListEntry<DelayAction> {
+  void tryUnlink() {
+    if (list != null) unlink();
+  }
+}
+
+class MountAction extends DelayAction {
+  final VoidCallback callback;
+
+  MountAction({
+    @required this.callback,
+  });
+}
+
+class LayoutAndPaintAction extends DelayAction {
   _BuildStatus nextStatus;
   _BuildStatus currentStatus;
   final VoidCallback markNeedsLayout;
   final VoidCallback markNeedsPaint;
 
-  BuildInfo({
+  LayoutAndPaintAction({
     @required this.markNeedsLayout,
     @required this.markNeedsPaint,
     this.currentStatus = _BuildStatus.idle,
     this.nextStatus = _BuildStatus.idle,
   }) : assert(markNeedsLayout != null, markNeedsPaint != null);
-
-  void tryUnlink() {
-    if (list != null) unlink();
-  }
 }
