@@ -9,8 +9,6 @@ import 'package:cached_network_image/src/image_provider/_image_provider_io.dart'
     if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
     as CachedNetworkImage;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
-import 'package:image/image.dart' as IMG;
-import 'package:flutter_summary/main/performance/widgets/round_corners_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: implementation_imports
@@ -22,7 +20,6 @@ import 'isolate_manager.dart';
 final IsolateManager _isolateManager = IsolateManager(
   isolateFunction: _createRoundCornerIsolateMethod,
   reverseOrder: true,
-  keepRunning: true,
   maxCocurrentIsolateCount: 1,
 );
 

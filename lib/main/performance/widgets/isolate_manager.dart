@@ -49,29 +49,11 @@ class IsolateManager {
   // The function must be a top-level function or a static method
   final IsolateFunction isolateFunction;
 
-  ///是否保持一个Isolate一直运行
-  final bool keepRunning;
-
-  ///是否保持一个Isolate一直运行
-  IsolateInfo _keepRunningIsolateInfo;
-
-  ///如果_pauseCapability不为空，则表示_keepRunningIsolateInfo.isolate处于pause状态
-  Capability _pauseCapability;
-
   IsolateManager({
     this.maxCocurrentIsolateCount = 3,
     this.reverseOrder = false,
     @required this.isolateFunction,
-    this.keepRunning = false,
-  }) : assert(maxCocurrentIsolateCount > 0 && isolateFunction != null) {
-    if (keepRunning == true) {
-      createIsolate().then((value) {
-        if (value is IsolateInfo) {
-          _keepRunningIsolateInfo = value;
-        }
-      });
-    }
-  }
+  }) : assert(maxCocurrentIsolateCount > 0 && isolateFunction != null);
 
   Future<dynamic> send(dynamic message) async {
     assert(message != null);
@@ -85,25 +67,8 @@ class IsolateManager {
   void handleNextAction({Isolate isolate, SendPort sendPort}) {
     if (_penddingActionList.isEmpty) {
       if (isolate != null) {
-        if (isolate == _keepRunningIsolateInfo.isolate) {
-          if (_pauseCapability == null) {
-            _pauseCapability = _keepRunningIsolateInfo.isolate.pause();
-          }
-        } else {
-          isolate.kill(priority: Isolate.immediate);
-        }
+        isolate.kill(priority: Isolate.immediate);
       }
-      return;
-    }
-
-    ///优先使用_keepRunningIsolateInfo.isolate处理
-    if (_pauseCapability != null &&
-        _keepRunningIsolateInfo?.isolate != null &&
-        _keepRunningIsolateInfo?.sendPort != null) {
-      // _keepRunningIsolateInfo?.isolate处于pause状态
-      runNextAction(_keepRunningIsolateInfo.isolate, _keepRunningIsolateInfo.sendPort);
-      _keepRunningIsolateInfo.isolate.resume(_pauseCapability);
-      _pauseCapability = null;
       return;
     }
 

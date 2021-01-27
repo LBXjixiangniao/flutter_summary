@@ -9,7 +9,7 @@ import 'package:flutter/services.dart';
 
 final DelayBuildManager defaultDelayBuildManager = DelayBuildManager(reverse: true);
 
-enum _BuildStatus {
+enum _LayoutAndPaintStatus {
   idle,
   layout,
   paint,
@@ -43,14 +43,16 @@ class _DelayBuildWidgetState extends State<DelayBuildWidget> {
   Widget build(BuildContext context) {
     if (_initBuild == false) {
       _initBuild = true;
-      buildManager._add(MountAction(
-        callback: () {
-          if (mounted) {
-            setState(() {});
-          }
-          return true;
-        },
-      ));
+      buildManager._add(
+        _BuildAction(
+          callback: () {
+            if (mounted) {
+              setState(() {});
+            }
+            return true;
+          },
+        ),
+      );
       return SizedBox.shrink();
     }
     return widget.builder?.call(context);
@@ -285,15 +287,15 @@ class _LayoutAndPaintDelayRenderObject extends RenderProxyBox {
 
   @override
   void markNeedsLayout() {
-    if (info.currentStatus != _BuildStatus.layout) {
-      info.nextStatus = _BuildStatus.layout;
+    if (info.currentStatus != _LayoutAndPaintStatus.layout) {
+      info.nextStatus = _LayoutAndPaintStatus.layout;
       addBuildInfoToManager();
     }
   }
 
   @override
   void performLayout() {
-    if (info.currentStatus == _BuildStatus.layout) {
+    if (info.currentStatus == _LayoutAndPaintStatus.layout) {
       super.performLayout();
     } else {
       performResize();
@@ -307,8 +309,8 @@ class _LayoutAndPaintDelayRenderObject extends RenderProxyBox {
 
   @override
   void markNeedsPaint() {
-    if (info.currentStatus == _BuildStatus.idle && info.nextStatus == _BuildStatus.idle) {
-      info.nextStatus = _BuildStatus.paint;
+    if (info.currentStatus == _LayoutAndPaintStatus.idle && info.nextStatus == _LayoutAndPaintStatus.idle) {
+      info.nextStatus = _LayoutAndPaintStatus.paint;
       addBuildInfoToManager();
     }
   }
@@ -316,7 +318,7 @@ class _LayoutAndPaintDelayRenderObject extends RenderProxyBox {
   @override
   void paint(PaintingContext context, Offset offset) {
     _hadPainted = true;
-    if (info.list == null || info.currentStatus == _BuildStatus.paint) {
+    if (info.list == null || info.currentStatus == _LayoutAndPaintStatus.paint) {
       super.paint(context, offset);
     }
   }
@@ -337,7 +339,7 @@ class _LayoutAndPaintDelayRenderObject extends RenderProxyBox {
 }
 
 class DelayBuildManager {
-  final LinkedList<DelayAction> _list = LinkedList<DelayAction>();
+  final LinkedList<_DelayAction> _list = LinkedList<_DelayAction>();
   bool _isRunning = false;
 
   bool get isRunning => _isRunning;
@@ -348,6 +350,8 @@ class DelayBuildManager {
   DelayBuildManager _dependent;
   //this依赖于的
   DelayBuildManager _dependentcy;
+
+  DelayBuildManager({this.reverse = false});
 
   //this依赖于dependentcy
   void dependentOn(DelayBuildManager dependentcy) {
@@ -398,8 +402,7 @@ class DelayBuildManager {
     return b;
   }
 
-  DelayBuildManager({this.reverse = false});
-  void _add(DelayAction info) {
+  void _add(_DelayAction info) {
     _list.add(info);
     _start();
   }
@@ -407,21 +410,21 @@ class DelayBuildManager {
   void _actionNext() {
     if (!_isRunning) return;
     if (_list.isNotEmpty) {
-      DelayAction info = reverse == true ? _list.last : _list.first;
+      _DelayAction info = reverse == true ? _list.last : _list.first;
       if (info is LayoutAndPaintAction) {
-        if (info.nextStatus == _BuildStatus.idle || info.nextStatus == null) {
-          info.currentStatus = _BuildStatus.idle;
+        if (info.nextStatus == _LayoutAndPaintStatus.idle || info.nextStatus == null) {
+          info.currentStatus = _LayoutAndPaintStatus.idle;
           info.tryUnlink();
           _actionNext();
         } else {
           bool waitNextFrame = false;
-          if (info.nextStatus == _BuildStatus.layout) {
-            info.currentStatus = _BuildStatus.layout;
-            info.nextStatus = _BuildStatus.paint;
+          if (info.nextStatus == _LayoutAndPaintStatus.layout) {
+            info.currentStatus = _LayoutAndPaintStatus.layout;
+            info.nextStatus = _LayoutAndPaintStatus.paint;
             waitNextFrame = info.markNeedsLayout();
-          } else if (info.nextStatus == _BuildStatus.paint) {
-            info.currentStatus = _BuildStatus.paint;
-            info.nextStatus = _BuildStatus.idle;
+          } else if (info.nextStatus == _LayoutAndPaintStatus.paint) {
+            info.currentStatus = _LayoutAndPaintStatus.paint;
+            info.nextStatus = _LayoutAndPaintStatus.idle;
             waitNextFrame = info.markNeedsPaint();
           }
           if (waitNextFrame) {
@@ -432,7 +435,7 @@ class DelayBuildManager {
             _actionNext();
           }
         }
-      } else if (info is MountAction) {
+      } else if (info is _BuildAction) {
         bool b = info.callback?.call();
         info.tryUnlink();
         if (b == true) {
@@ -452,30 +455,30 @@ class DelayBuildManager {
   }
 }
 
-class DelayAction extends LinkedListEntry<DelayAction> {
+class _DelayAction extends LinkedListEntry<_DelayAction> {
   void tryUnlink() {
     if (list != null) unlink();
   }
 }
 
-class MountAction extends DelayAction {
+class _BuildAction extends _DelayAction {
   final VoidCallback callback;
 
-  MountAction({
+  _BuildAction({
     @required this.callback,
   });
 }
 
-class LayoutAndPaintAction extends DelayAction {
-  _BuildStatus nextStatus;
-  _BuildStatus currentStatus;
+class LayoutAndPaintAction extends _DelayAction {
+  _LayoutAndPaintStatus nextStatus;
+  _LayoutAndPaintStatus currentStatus;
   final VoidCallback markNeedsLayout;
   final VoidCallback markNeedsPaint;
 
   LayoutAndPaintAction({
     @required this.markNeedsLayout,
     @required this.markNeedsPaint,
-    this.currentStatus = _BuildStatus.idle,
-    this.nextStatus = _BuildStatus.idle,
+    this.currentStatus = _LayoutAndPaintStatus.idle,
+    this.nextStatus = _LayoutAndPaintStatus.idle,
   }) : assert(markNeedsLayout != null, markNeedsPaint != null);
 }
