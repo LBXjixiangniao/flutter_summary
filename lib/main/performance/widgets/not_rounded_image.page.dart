@@ -10,12 +10,12 @@ import 'package:flutter_summary/util/image_helper.dart';
 import 'optimize_widget.dart';
 import 'isolate_manager.dart';
 
-class RoundedImagePage extends StatefulWidget {
+class NotRoundedImagePage extends StatefulWidget {
   @override
   _RoundedImagePageState createState() => _RoundedImagePageState();
 }
 
-class _RoundedImagePageState extends State<RoundedImagePage> {
+class _RoundedImagePageState extends State<NotRoundedImagePage> {
   int radius = 30;
   Color color = Colors.red;
   double height = 190;
@@ -66,7 +66,7 @@ class _RoundedImagePageState extends State<RoundedImagePage> {
           ),
         ],
       ),
-      body: wrapWidget(true),
+      body: wrapWidget(false),
     );
   }
 }

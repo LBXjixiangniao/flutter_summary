@@ -72,8 +72,11 @@ extension _Uint8ListExtension on Uint32List {
     if (width == null || height == null || !radius.isValideRadius) return;
     //argb
     int colorValue = (color ?? Colors.transparent).value;
-    //专程rgba
-    // colorValue = (colorValue & 0xffffff << 24) | (0xff000000 & colorValue) >> 24;
+    print('origin ColorValue:${colorValue.toRadixString(16)}');
+    //专成rgba
+    // colorValue = ((colorValue & 0x00ffffff) << 8) | ((0xff000000 & colorValue) >> 24);
+    //abgr
+    colorValue = (colorValue & 0xff00ff00) | ((0x00ff0000 & colorValue) >> 16) | ((0x000000ff & colorValue) << 16);
 
     // 右下角中心点
     _Position rightBottomCenter = _Position(width - radius, height - radius);
@@ -274,6 +277,8 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
           .catchError((onError) => null);
       //将像素数组解码成图片数据
       if (result is _IsolateResult) {
+        print('===============');
+        print(result.bytes[3].toRadixString(16)+result.bytes[2].toRadixString(16)+result.bytes[1].toRadixString(16)+result.bytes[0].toRadixString(16));
         return _decodeImageFromPixels(result.bytes, result.width, result.height, ui.PixelFormat.rgba8888);
       } else {
         return _decodeImageFromPixels(

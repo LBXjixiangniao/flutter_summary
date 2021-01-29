@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/main/performance/widgets/cupertino_alert_dialog.dart';
-import 'package:flutter_summary/main/performance/widgets/delay_layout_paint_widget.dart';
 import 'package:flutter_summary/router/router.dart';
 
-import 'widgets/delay_build_widget.dart';
-import 'widgets/not_delay_build_widget.dart';
-import 'widgets/rounded_corner_build.dart';
+import 'widgets/create_rounder_corner_image.dart';
+import 'widgets/not_rounded_image.page.dart';
+import 'widgets/optimize_widget.dart';
+import 'widgets/common_widget.dart';
 import 'widgets/rounded_image_page.dart';
 
 class ListTileInfo {
@@ -27,34 +27,34 @@ class PerformanceListPage extends StatelessWidget {
             Navigator.push(context, RouterManager.routeForPage(page: CupertinoAlertDialogTest()));
           }),
       ListTileInfo(
-          title: 'DelayLayoutPaintWidget',
-          subTitle: '延时layout和paint优化',
-          tapAction: () {
-            Navigator.push(context, RouterManager.routeForPage(page: DelayLayoutPaintWidgetTestPage()));
-          }),
-      ListTileInfo(
-          title: 'DelayBuildWidget',
-          subTitle: '延时build优化',
-          tapAction: () {
-            Navigator.push(context, RouterManager.routeForPage(page: DelayBuildWidgetTestPage()));
-          }),
-      ListTileInfo(
-          title: 'CommontWidget',
+          title: '普通页面',
           subTitle: '普通页面，没优化的',
           tapAction: () {
-            Navigator.push(context, RouterManager.routeForPage(page: NotDelayBuildWidget()));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => CommonPage()));
           }),
       ListTileInfo(
-          title: 'DelayBuildAndLayoutPaintWidget',
-          subTitle: '延时build和延时layout和paint混合使用',
+          title: '优化页面',
+          subTitle: 'layout和paint分帧进行',
           tapAction: () {
-            Navigator.push(context, RouterManager.routeForPage(page: RoundedCornderBuildPage()));
+            Navigator.push(context, MaterialPageRoute(builder: (_) => OptimizePage()));
           }),
       ListTileInfo(
           title: 'RoundedImage',
           subTitle: '圆角图片',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: RoundedImagePage()));
+          }),
+      ListTileInfo(
+          title: 'NotRoundedImage',
+          subTitle: '非圆角图片',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: NotRoundedImagePage()));
+          }),
+      ListTileInfo(
+          title: '创建圆角',
+          subTitle: '创建圆角',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: CustomRoundedImagePage()));
           }),
     ];
     return Scaffold(

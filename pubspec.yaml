@@ -70,6 +70,7 @@ dependencies:
   #跨平台开发框架
   # flutter_boost: ^1.17.1
   list_index_manager: ^0.0.1
+  delay_widget: ^0.0.1
   image: ^2.1.19
 
 dev_dependencies:

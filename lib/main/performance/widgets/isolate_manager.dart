@@ -141,7 +141,7 @@ class IsolateManager {
           receivePort?.close();
           handleNextAction();
         });
-
+        
         receivePort.listen((message) {
           ///从isolate中传递过来的信息
           if (message is SendPort) {
