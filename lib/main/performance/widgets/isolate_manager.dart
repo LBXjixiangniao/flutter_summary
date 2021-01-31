@@ -38,6 +38,7 @@ class IsolateManager {
   //如果reverseOrder为true，则后加入的事件先执行
   final bool reverseOrder;
   //最大允许同时运行Isolate数
+  //新开一个Isolate的时间约为2ms
   final int maxCocurrentIsolateCount;
   //当前运行Isolate数
   int _currentIsolateCount = 0;

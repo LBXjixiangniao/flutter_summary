@@ -5,23 +5,23 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cached_network_image/src/image_provider/_image_provider_io.dart'
-    if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
+import 'package:cached_network_image/src/image_provider/_image_provider_io.dart' if (dart.library.html) 'package:cached_network_image/src/image_provider/_image_provider_web.dart'
     as CachedNetworkImage;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // ignore: implementation_imports
-import 'package:flutter/src/painting/_network_image_io.dart'
-    if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
+import 'package:flutter/src/painting/_network_image_io.dart' if (dart.library.html) 'package:flutter/src/painting/_network_image_web.dart' as network_image;
 
 import 'isolate_manager.dart';
 
 final IsolateManager _isolateManager = IsolateManager(
   isolateFunction: _createRoundCornerIsolateMethod,
   reverseOrder: true,
-  maxCocurrentIsolateCount: 1,
+  maxCocurrentIsolateCount: 3,
 );
+
+const int MinRadius = 2;
 
 enum ClipLocation {
   Start,
@@ -37,7 +37,7 @@ class _Position {
 }
 
 extension _RadiusDouble on int {
-  bool get isValideRadius => this != null && this > 1;
+  bool get isValideRadius => this != null && this >= MinRadius;
 }
 
 extension _Uint8ListExtension on Uint32List {
@@ -72,7 +72,6 @@ extension _Uint8ListExtension on Uint32List {
     if (width == null || height == null || !radius.isValideRadius) return;
     //argb
     int colorValue = (color ?? Colors.transparent).value;
-    print('origin ColorValue:${colorValue.toRadixString(16)}');
     //专成rgba
     // colorValue = ((colorValue & 0x00ffffff) << 8) | ((0xff000000 & colorValue) >> 24);
     //abgr
@@ -171,7 +170,7 @@ extension _Uint8ListExtension on Uint32List {
   }
 }
 
-mixin CornerAndClipKeyMixin on AssetBundleImageKey {
+mixin _CornerAndClipKeyMixin on AssetBundleImageKey {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -191,7 +190,7 @@ mixin CornerAndClipKeyMixin on AssetBundleImageKey {
 
   @override
   bool operator ==(Object other) {
-    return other is CornerAndClipKeyMixin &&
+    return other is _CornerAndClipKeyMixin &&
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
@@ -205,7 +204,7 @@ mixin CornerAndClipKeyMixin on AssetBundleImageKey {
   int get hashCode => super.hashCode;
 }
 
-mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
+mixin _CornerAndClipProviderMixin<T> on ImageProvider<T> {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -226,12 +225,7 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
   @override
   ImageStreamCompleter load(key, DecoderCallback decode) {
     assert(cornerRadius.isValideRadius);
-    final DecoderCallback decodeRoundCorners =
-        (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
-      assert(() {
-        print('CornerAndClipProviderMixin load');
-        return true;
-      }());
+    final DecoderCallback decodeRoundCorners = (Uint8List bytes, {int cacheWidth, int cacheHeight, bool allowUpscaling}) async {
       int imageWidth;
       int imageHeight;
       bool customCacheSize = this.cacheImageWidth != null || this.cacheImageHeight != null;
@@ -247,19 +241,14 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
         if (image is ui.Image) {
           imageWidth = image.width;
           imageHeight = image.height;
-          return (await image.toByteData(format: ui.ImageByteFormat.rawRgba).catchError((onError) => null))
-              ?.buffer
-              ?.asUint32List();
+          return (await image.toByteData(format: ui.ImageByteFormat.rawRgba).catchError((onError) => null))?.buffer?.asUint32List();
         }
         return null;
       }).catchError(
         (onError) => null,
       );
 
-      if (uint32List == null)
-        return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
-      // print('start ${DateTime.now().toIso8601String()}');
-      // print('decode end ${DateTime.now().toIso8601String()}===${uint8List.length}');
+      if (uint32List == null) return decode(bytes, cacheWidth: cacheWidth, cacheHeight: cacheHeight, allowUpscaling: allowUpscaling ?? false);
 
       //圆角或者裁剪操作
       var result = await _isolateManager
@@ -277,12 +266,9 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
           .catchError((onError) => null);
       //将像素数组解码成图片数据
       if (result is _IsolateResult) {
-        print('===============');
-        print(result.bytes[3].toRadixString(16)+result.bytes[2].toRadixString(16)+result.bytes[1].toRadixString(16)+result.bytes[0].toRadixString(16));
         return _decodeImageFromPixels(result.bytes, result.width, result.height, ui.PixelFormat.rgba8888);
       } else {
-        return _decodeImageFromPixels(
-            uint32List.buffer.asUint8List(), imageWidth, imageHeight, ui.PixelFormat.rgba8888);
+        return _decodeImageFromPixels(uint32List.buffer.asUint8List(), imageWidth, imageHeight, ui.PixelFormat.rgba8888);
       }
     };
 
@@ -295,7 +281,7 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 
   @override
   bool operator ==(Object other) {
-    return other is CornerAndClipProviderMixin &&
+    return other is _CornerAndClipProviderMixin &&
         super == other &&
         other.cornerRadius == cornerRadius &&
         (cornerRadius == null || other.cornerColor == cornerColor) &&
@@ -310,39 +296,143 @@ mixin CornerAndClipProviderMixin<T> on ImageProvider<T> {
 }
 
 class RoundCornersImageProvider {
-  static ImageProvider network(
+  static RoundCornersNetworkImage network(
     String src, {
     double scale = 1.0,
     Map<String, String> headers,
     int cacheWidth,
     int cacheHeight,
-  }) {}
+    int cornerRadius,
+    Color cornerColor,
+    Size imageShowSize,
+    ClipLocation clipLocation = ClipLocation.Center,
+  }) {
+    assert(cornerRadius.isValideRadius);
+    return RoundCornersNetworkImage(
+      src,
+      scale: scale,
+      headers: headers,
+      cacheImageWidth: cacheWidth,
+      cacheImageHeight: cacheHeight,
+      cornerRadius: cornerRadius,
+      cornerColor: cornerColor,
+      imageShowSize: imageShowSize,
+      clipLocation: clipLocation,
+    );
+  }
+
+  static RoundCornerCachedNetworkImage cacheNetwork(
+    String url, {
+    double scale = 1.0,
+    Map<String, String> headers,
+    BaseCacheManager cacheManager,
+    ImageRenderMethodForWeb imageRenderMethodForWeb,
+    int cacheWidth,
+    int cacheHeight,
+    int cornerRadius,
+    Color cornerColor,
+    Size imageShowSize,
+    ClipLocation clipLocation = ClipLocation.Center,
+  }) {
+    assert(cornerRadius.isValideRadius);
+    return RoundCornerCachedNetworkImage(
+      url,
+      scale: scale,
+      headers: headers,
+      cacheManager: cacheManager,
+      imageRenderMethodForWeb: imageRenderMethodForWeb,
+      cacheImageWidth: cacheWidth,
+      cacheImageHeight: cacheHeight,
+      cornerRadius: cornerRadius,
+      cornerColor: cornerColor,
+      imageShowSize: imageShowSize,
+      clipLocation: clipLocation,
+    );
+  }
+
   static ImageProvider file(
     File file, {
     double scale = 1.0,
-    Map<String, String> headers,
     int cacheWidth,
     int cacheHeight,
-  }) {}
+    int cornerRadius,
+    Color cornerColor,
+    Size imageShowSize,
+    ClipLocation clipLocation = ClipLocation.Center,
+  }) {
+    assert(cornerRadius.isValideRadius);
+    return RoundCornersFileImage(
+      file,
+      scale: scale,
+      cacheImageWidth: cacheWidth,
+      cacheImageHeight: cacheHeight,
+      cornerRadius: cornerRadius,
+      cornerColor: cornerColor,
+      imageShowSize: imageShowSize,
+      clipLocation: clipLocation,
+    );
+  }
+
   static ImageProvider asset(
-    File file, {
+    String assetName, {
     AssetBundle bundle,
     double scale,
-    Map<String, String> headers,
     int cacheWidth,
     int cacheHeight,
-  }) {}
+    int cornerRadius,
+    Color cornerColor,
+    Size imageShowSize,
+    ClipLocation clipLocation = ClipLocation.Center,
+  }) {
+    assert(cornerRadius.isValideRadius);
+    return scale != null
+        ? RoundCornersExactAssetImage(
+            assetName,
+            scale: scale,
+            cacheImageWidth: cacheWidth,
+            cacheImageHeight: cacheHeight,
+            cornerRadius: cornerRadius,
+            cornerColor: cornerColor,
+            imageShowSize: imageShowSize,
+            clipLocation: clipLocation,
+          )
+        : RoundCornersAssetImage(
+            assetName,
+            cacheImageWidth: cacheWidth,
+            cacheImageHeight: cacheHeight,
+            cornerRadius: cornerRadius,
+            cornerColor: cornerColor,
+            imageShowSize: imageShowSize,
+            clipLocation: clipLocation,
+          );
+  }
+
   static ImageProvider memory(
     Uint8List bytes, {
     AssetBundle bundle,
     double scale = 1.0,
-    Map<String, String> headers,
     int cacheWidth,
     int cacheHeight,
-  }) {}
+    int cornerRadius,
+    Color cornerColor,
+    Size imageShowSize,
+    ClipLocation clipLocation = ClipLocation.Center,
+  }) {
+    assert(cornerRadius.isValideRadius);
+    return RoundCornersMemoryImage(
+      bytes,
+      scale: scale,
+      cacheImageWidth: cacheWidth,
+      cacheImageHeight: cacheHeight,
+      cornerRadius: cornerRadius,
+      cornerColor: cornerColor,
+      imageShowSize: imageShowSize,
+      clipLocation: clipLocation,
+    );
+  }
 }
 
-class RoundCornersExactAssetImage extends ExactAssetImage with CornerAndClipProviderMixin {
+class RoundCornersExactAssetImage extends ExactAssetImage with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -371,12 +461,13 @@ class RoundCornersExactAssetImage extends ExactAssetImage with CornerAndClipProv
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(assetName, bundle: bundle, scale: scale, package: package);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(assetName, bundle: bundle, scale: scale, package: package);
 
   @override
   Future<AssetBundleImageKey> obtainKey(ImageConfiguration configuration) {
     return super.obtainKey(configuration).then((value) {
-      return WithCornerAssetBundleImageKey(
+      return _WithCornerAssetBundleImageKey(
         bundle: value.bundle,
         name: value.name,
         scale: value.scale,
@@ -391,7 +482,7 @@ class RoundCornersExactAssetImage extends ExactAssetImage with CornerAndClipProv
   }
 }
 
-class RoundCornersAssetImage extends AssetImage with CornerAndClipProviderMixin {
+class RoundCornersAssetImage extends AssetImage with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -419,12 +510,13 @@ class RoundCornersAssetImage extends AssetImage with CornerAndClipProviderMixin 
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(assetName, bundle: bundle, package: package);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(assetName, bundle: bundle, package: package);
 
   @override
   Future<AssetBundleImageKey> obtainKey(ImageConfiguration configuration) {
     return super.obtainKey(configuration).then((value) {
-      return WithCornerAssetBundleImageKey(
+      return _WithCornerAssetBundleImageKey(
         bundle: value.bundle,
         name: value.name,
         scale: value.scale,
@@ -439,7 +531,7 @@ class RoundCornersAssetImage extends AssetImage with CornerAndClipProviderMixin 
   }
 }
 
-class WithCornerAssetBundleImageKey extends AssetBundleImageKey with CornerAndClipKeyMixin {
+class _WithCornerAssetBundleImageKey extends AssetBundleImageKey with _CornerAndClipKeyMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -457,7 +549,7 @@ class WithCornerAssetBundleImageKey extends AssetBundleImageKey with CornerAndCl
   //显示出来的图片大小
   final Size imageShowSize;
 
-  const WithCornerAssetBundleImageKey({
+  const _WithCornerAssetBundleImageKey({
     @required AssetBundle bundle,
     @required String name,
     @required double scale,
@@ -467,10 +559,11 @@ class WithCornerAssetBundleImageKey extends AssetBundleImageKey with CornerAndCl
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation,
-  }) : super(bundle: bundle, name: name, scale: scale);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(bundle: bundle, name: name, scale: scale);
 }
 
-class RoundCornersFileImage extends FileImage with CornerAndClipProviderMixin {
+class RoundCornersFileImage extends FileImage with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -497,10 +590,11 @@ class RoundCornersFileImage extends FileImage with CornerAndClipProviderMixin {
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(file, scale: scale);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(file, scale: scale);
 }
 
-class RoundCornersMemoryImage extends MemoryImage with CornerAndClipProviderMixin {
+class RoundCornersMemoryImage extends MemoryImage with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -527,10 +621,11 @@ class RoundCornersMemoryImage extends MemoryImage with CornerAndClipProviderMixi
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(bytes, scale: scale);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(bytes, scale: scale);
 }
 
-class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAndClipProviderMixin {
+class RoundCornersNetworkImage extends network_image.NetworkImage with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -558,11 +653,11 @@ class RoundCornersNetworkImage extends network_image.NetworkImage with CornerAnd
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(url, scale: scale, headers: headers);
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(url, scale: scale, headers: headers);
 }
 
-class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImageProvider
-    with CornerAndClipProviderMixin {
+class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImageProvider with _CornerAndClipProviderMixin {
   ///圆角，如果imageShowSize不为空，则通过计算使得显示出来的图片圆角为cornerRadius，
   ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
   ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
@@ -591,7 +686,8 @@ class RoundCornerCachedNetworkImage extends CachedNetworkImage.CachedNetworkImag
     this.cornerRadius,
     this.cornerColor,
     this.clipLocation = ClipLocation.Center,
-  }) : super(
+  })  : assert(cornerRadius != null && cornerRadius >= MinRadius),
+        super(
           url,
           scale: scale,
           headers: headers,
@@ -627,8 +723,7 @@ Future _createRoundCornerIsolateMethod(dynamic info) async {
               x = info.imageWidth - resultImageWidth;
               break;
           }
-          uint32list =
-              uint32list.copyCrop(info.imageWidth, info.imageHeight, x, 0, resultImageWidth, resultImageHeight);
+          uint32list = uint32list.copyCrop(info.imageWidth, info.imageHeight, x, 0, resultImageWidth, resultImageHeight);
         } else {
           //当前图片过高了
           resultImageWidth = info.imageWidth;
@@ -653,12 +748,9 @@ Future _createRoundCornerIsolateMethod(dynamic info) async {
       }
 
       if (info.cornerRadius != null) {
-        int radius =
-            info.showSize == null ? info.cornerRadius : (info.cornerRadius * resultImageWidth) ~/ info.showSize.width;
-        uint32list.setCornerRadius(
-            width: resultImageWidth, height: resultImageHeight, radius: radius, color: info.color);
-        return _IsolateResult(
-            bytes: uint32list.buffer.asUint8List(), width: resultImageWidth, height: resultImageHeight);
+        int radius = info.showSize == null ? info.cornerRadius : (info.cornerRadius * resultImageWidth) ~/ info.showSize.width;
+        uint32list.setCornerRadius(width: resultImageWidth, height: resultImageHeight, radius: radius, color: info.color);
+        return _IsolateResult(bytes: uint32list.buffer.asUint8List(), width: resultImageWidth, height: resultImageHeight);
       }
     } else {
       return _IsolateResult(bytes: info.bytes.buffer.asUint8List(), width: info.imageWidth, height: info.imageHeight);
@@ -713,6 +805,5 @@ class _IsolateResult {
   final int width;
   final int height;
 
-  _IsolateResult({@required this.bytes, @required this.width, @required this.height})
-      : assert(bytes != null && width != null && height != null);
+  _IsolateResult({@required this.bytes, @required this.width, @required this.height}) : assert(bytes != null && width != null && height != null);
 }
