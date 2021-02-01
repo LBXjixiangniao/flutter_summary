@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_summary/util/image_helper.dart';
 
 class GridInfo {
   final String url;
@@ -201,7 +202,7 @@ class CommonPageState extends State<CommonPage> {
                 ),
               ),
               Image.asset(
-                'assets/icon_a_${info.aboveIcon}.png',
+                ImageHelper.image('icon_a_${info.aboveIcon}.png'),
                 width: 35,
               ),
             ],
@@ -234,7 +235,7 @@ class CommonPageState extends State<CommonPage> {
                   ),
                 ),
                 child: Image.asset(
-                  'assets/icon_a_${info.aboveIcon}.png',
+                  ImageHelper.image('icon_a_${info.aboveIcon}.png'),
                   width: 20,
                 ),
               ),
@@ -281,7 +282,7 @@ class CommonPageState extends State<CommonPage> {
                 ),
               ),
               Image.asset(
-                'assets/icon_${info.icon}.png',
+                ImageHelper.image('icon_${info.icon}.png'),
                 width: 25,
               ),
               Spacer(),

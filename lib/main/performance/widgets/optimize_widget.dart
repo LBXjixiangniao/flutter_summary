@@ -1,7 +1,7 @@
 import 'package:delay_widget/delay_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:round_corners_image_provider/round_corners_image_provider.dart';
 import 'common_widget.dart';
-import 'round_corners_image_provider.dart';
 
 class OptimizePage extends CommonPage {
   @override
@@ -45,8 +45,8 @@ class _OptimizePageState extends CommonPageState {
         image: RoundCornerCachedNetworkImage(
           info.url,
           imageShowSize: Size(width, height),
-          cornerRadius: 30,
-          cornerColor: Colors.yellow,
+          cornerRadius: 8,
+          cornerColor: Colors.white,
         ),
       ),
       // super.networkImage(info, width, height),

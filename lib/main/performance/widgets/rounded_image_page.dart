@@ -1,14 +1,7 @@
-import 'dart:async';
-import 'dart:isolate';
-import 'dart:math';
-
 import 'package:flutter_summary/main/performance/manager.dart/manager.dart';
-import 'package:flutter_summary/main/performance/widgets/round_corners_image_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_summary/util/image_helper.dart';
-
-import 'optimize_widget.dart';
-import 'isolate_manager.dart';
+import 'package:round_corners_image_provider/round_corners_image_provider.dart';
 
 class RoundedImagePage extends StatefulWidget {
   @override

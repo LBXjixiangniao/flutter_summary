@@ -6,6 +6,7 @@ import 'package:flutter_summary/main/performance/widgets/cupertino_alert_dialog.
 import 'package:flutter_summary/router/router.dart';
 
 import 'widgets/create_rounder_corner_image.dart';
+import 'widgets/customLayout.dart';
 import 'widgets/not_rounded_image.page.dart';
 import 'widgets/optimize_widget.dart';
 import 'widgets/common_widget.dart';
@@ -43,7 +44,7 @@ class PerformanceListPage extends StatelessWidget {
           }),
       ListTileInfo(
           title: 'RoundedImage',
-          subTitle: '圆角图片',
+          subTitle: 'ClipRRect圆角图片',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: RoundedImagePage()));
           }),
@@ -55,9 +56,15 @@ class PerformanceListPage extends StatelessWidget {
           }),
       ListTileInfo(
           title: '创建圆角',
-          subTitle: '创建圆角',
+          subTitle: 'ImageProvider生成带圆角的图片',
           tapAction: () {
             Navigator.push(context, RouterManager.routeForPage(page: CustomRoundedImagePage()));
+          }),
+      ListTileInfo(
+          title: '自定义layout',
+          subTitle: '自定义layout',
+          tapAction: () {
+            Navigator.push(context, RouterManager.routeForPage(page: CustomLayoutPage()));
           }),
     ];
     return Scaffold(
