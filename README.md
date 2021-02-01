@@ -395,3 +395,99 @@ HitTestIgnoreManagerWidget(
             ),
 ```
 
+## 分帧layout和paint
+[dart pub](https://pub.dev/packages/delay_widget)
+* DelayBuildWidget控制builder返回的widget分帧创建。
+* DelayLayoutAndPaintWidget控制child的layout和paint分帧进行。 
+* 如果isScrollalbeItem 参数为true，则通过Scrollable.recommendDeferredLoadingForContext(context)判断当前小部件是否滚动太快了，如果滚动太快则在下一帧再判断是否build、layou和paint
+
+例如：假设多个DelayBuildWidget的buildManager相同，则每帧进行一个DelayBuildWidget的builder调用并显示builder返回的widget。 DelayLayoutAndPaintWidget的原理类似，不过分帧处理的是child的layout和paint。
+
+#### 使用该封装前后性能对比如下：
+以下截图为列表按设定速度滚动得到的cpu、gpu图，由两图可以看出优化后cpu性能明显将一帧的高耗时分摊到多个帧上了
+![没优化的](https://upload-images.jianshu.io/upload_images/4188482-cf0fdcc5b6020b54.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
+![使用分帧优化的](https://upload-images.jianshu.io/upload_images/4188482-c6fb235852ce463e.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
+
+## 圆角图片
+[dart pub](https://pub.dev/packages/round_corners_image_provider)
+不使用ClipRRect显示圆角图片，而是在ImageProvider中生成带圆角的图片在递交Image显示
+#### 用法
+
+```
+Image(
+    image: RoundCornersImageProvider.asset(
+        'assets/icon_round_corners.png',
+        cornerRadius: 30,
+        imageShowSize: Size(60, 60),
+        cornerColor: Colors.yellow
+    ),
+    width: 60,
+    height: 60,
+),
+```
+#### 相对于系统提供的ImageProvider增加的属性及其作用
+```
+///圆角，如果imageShowSize不为空，则通过计算使得以imageShowSize显示出来的图片圆角为cornerRadius，
+  ///如果imageShowSize为空，而cacheImageWidth或者cacheImageHeight不为空，则将resize之后的图片圆角设置为cornerRadius
+  ///如果imageShowSize、cacheImageWidth、cacheImageHeight都为空，则将原图圆角设置为cornerRadius
+  final int cornerRadius;
+  //cornerRadius圆角外围部分的颜色，则被裁剪掉部分颜色
+  final Color cornerColor;
+  //ImageCache缓存图片的宽高设置
+  final int cacheImageWidth;
+  final int cacheImageHeight;
+
+  //imageShowSize设置后裁取的位置
+  //如果设置ClipLocation.Start，则当原始图片过长的时候从头部(上或左)截取宽高比为imageShowSize框高比的图片。
+  final ClipLocation clipLocation;
+
+  //图片显示的大小。如果设置了图片显示宽高，会按图片显示宽高比截取原图。圆角也会匹配imageShowSize
+  final Size imageShowSize;
+```
+#### 效果
+以下截图gpu、cup数据为不断刷新页面得到的性能图。由两图对比可看出通过ImageProvider生成圆角图片可以提高cpu和gup性能
+![使用ClipRRect](https://upload-images.jianshu.io/upload_images/4188482-8a35fdc9c9230d6a.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
+![ImageProvider生成圆角](https://upload-images.jianshu.io/upload_images/4188482-e3b0f48d4b7dd60b.jpg?imageMogr2/auto-orient/strip%7CimageView2/2/w/500)
+
+## 自定义layout
+##### 如：文字左边显示与文字等高的竖线
+普通做法为使用TextPainter先layou获取字体高度，在将高度设置给竖线。
+此处可以通过自定义layout，在performLayout方法中先layout字体，然后得到高度，再使用字体高度进行竖线的layou。主要代码如下：
+
+[完整例子](https://github.com/LBXjixiangniao/flutter_summary/blob/master/lib/main/performance/widgets/customLayout.dart)
+```
+///自定义Row的RenderObject的performLayout方法
+@override
+  void performLayout() {
+    final BoxConstraints constraints = this.constraints;
+    assert(constraints != null);
+
+    WithIDRenderObject lineChild;
+    WithIDRenderObject textChild;
+    RenderBox child = firstChild;
+    while (child != null) {
+      if (child is WithIDRenderObject) {
+        if (child.uid == 'line') {
+          lineChild = child;
+        } else if (child.uid == 'text') {
+          textChild = child;
+        }
+      }
+      final FlexParentData childParentData = child.parentData as FlexParentData;
+      child = childParentData.nextSibling;
+    }
+
+    ///layout
+    textChild.layout(BoxConstraints(maxWidth: constraints.maxWidth - 28), parentUsesSize: true);
+    lineChild.layout(BoxConstraints(minWidth: 0, maxWidth: 28, maxHeight: textChild.size.height), parentUsesSize: true);
+
+    ///设置this的size
+    size = Size(constraints.maxWidth, textChild.size.height);
+
+    ///设置child.parentData.offset
+    final FlexParentData leftChildParentData = lineChild.parentData as FlexParentData;
+    leftChildParentData.offset = Offset(0, 0);
+    final FlexParentData rightChildParentData = textChild.parentData as FlexParentData;
+    rightChildParentData.offset = Offset(lineChild.size.width, 0);
+  }
+```
